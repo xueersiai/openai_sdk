@@ -1,0 +1,389 @@
+/**
+ * Created by yangjingjing on 2017/2/10.
+ */
+var exam = exam || {};
+var timerSet;
+
+(function(){
+    var xexam = exam;
+    xexam.bar = $('.oral-test');
+    xexam.data = xexam.bar.data();
+    xexam.id = 'exam_' + xexam.data.key;
+    //结束时间
+    xexam.end = xexam.data.end;
+    //当前时间
+    xexam.now = xexam.data.now;
+    //剩余时间
+    xexam.remainTime = Number(xexam.end - xexam.now);
+    xexam.url = xexam.data.url;
+    xexam.key = xexam.data.key;
+    // 剩余时间计算
+    xexam.timeRemain = xexam.timeRemain || function( opt ){
+            var option = {
+                time   : 60,
+                expr   : null,
+                tpl    : '$minutes$分$seconds$秒',
+            };
+            $.extend(option, opt);
+            xexam.timeRemain.opt = option;
+            xexam.timeRemain.tpl = option.tpl || '$minutes$ 分 $seconds$ 秒';
+            xexam.timeRemain.time = option.time * 60;
+            xexam.timeRemain.box = $(option.expr);
+            return this.timeRemain;
+        };
+
+    //时间超出时重置倒计时
+    if (xexam.remainTime<0) {
+        var timePlus=Number(xexam.now - xexam.end);
+    }else{
+        var timePlus=0;
+    }
+
+    xexam.timeRemain.count = function(){
+        this.minutes = Math.floor(this.time / 60);
+        this.seconds = Math.floor(this.time % 60);
+        var html = this.tpl;
+        html = html.replace('$minutes$', this.minutes);
+        html = html.replace('$seconds$', this.seconds);
+        this.box.text(html);
+        this.time--;
+
+        if(this.time < 0){
+            this.box.css('color', '#ff7878');
+            this.minutes = Math.floor(timePlus / 60);
+            this.seconds = Math.floor(timePlus % 60);
+            var html = this.tpl;
+            html = html.replace('$minutes$', this.minutes);
+            html = html.replace('$seconds$', this.seconds);
+            this.box.text(html);
+            timePlus++;
+        }
+    };
+
+    xexam.timeRemain.start = function(){
+        this.timer = setInterval(function(){
+            xexam.timeRemain.count();
+        },1000);
+    };
+})();
+// 调用倒计时
+if($('#exam_remain').length > 0){
+    var a = exam.timeRemain({
+        time: exam.remainTime / 60,
+        expr: '#exam_remain',
+    }).start();
+}
+//老师点击收卷
+function speechExamSubmitAll(){
+    $('.stop').css({display: 'inline-block'});
+    $('.stop').after('<div class="dialog_mask"></div>');
+    $('.stop').html('<h2 class="stopText">时间到！停止作答</h2>');
+    setTimeout(function(){
+        ajaxSubmitIf();
+        $('.stop').remove();
+        $('.dialog_mask').remove();
+    },3000);
+}
+
+//储存localStorage
+var stuid = $('.oral-test').data('stuid');
+var liveid = $('.oral-test').data('liveid');
+var isplayback = $('.oral-test').data('isplayback');
+if (stuid!=localStorage.getItem('stuId')||liveid!=localStorage.getItem('liveId')||isplayback==1){
+    localStorage.removeItem('totleScore');
+    localStorage.removeItem('error');
+    localStorage.removeItem('timeStampStart');
+}
+localStorage.setItem('stuId',stuid);
+localStorage.setItem('liveId',liveid);
+localStorage.removeItem('startTime');
+if (localStorage.getItem('totleScore')){
+    var totle_score = localStorage.getItem('totleScore');
+    var totle_score = totle_score.split(",");
+}else{
+    var totle_score = [];
+}
+
+var iflytek = (function(document){
+    //read_sentence句子 read_word单词
+    var sentenceWord= $(".ise_demo").data('type');
+    var iseDemo = $.trim($('.ise_demo').html());
+    var iseContent = iseDemo.replace(/<br>/ig, ' ');
+    if(sentenceWord=='read_word'){
+        iseContent = '[word]' + iseContent.replace(/\s+/g,'\n') + '\n';
+    }
+    var example = ["en",sentenceWord,iseContent,];
+
+    var iat_result = document.getElementById('iat_result');
+    var tip = document.getElementById('a');
+    var volumeWrapper = document.getElementById('volume');
+    var startBtn = document.getElementById('start-btn');
+    var startAll = document.getElementById('canvas_wrapper');
+
+    //录音计时
+    function timerSetStart() {
+        clearInterval(timerSet);
+        if(localStorage.getItem('startTime')){
+            var startTime=localStorage.getItem('startTime');
+        }else {
+            var startTime=0;
+        }
+        timerSet = setInterval(function () {
+            startTime++;
+            localStorage.setItem('startTime',startTime);
+            $('.time-record').text(startTime + 's');
+        },1000);
+    }
+    /* 标识麦克风按钮状态，按下状态值为true，否则为false */
+    var mic_pressed = false;
+    var volumeEvent = (function () {
+        var lastVolume = 0;
+        var canvas = volumeWrapper,
+            cwidth = canvas.width,
+            cheight = canvas.height;
+        var ctx = canvas.getContext('2d');
+        var animationId;
+
+        var volumeCircle = function(lastVolume){
+            //画灰色的圆
+            ctx.clearRect(0,0,cwidth,cheight);
+            ctx.beginPath();
+            ctx.strokeStyle="#dbddef";
+            ctx.lineWidth=4;
+            ctx.arc(cwidth/2,cheight/2,52,0,Math.PI*2,false);
+            ctx.stroke();
+            ctx.closePath();
+            //根据音量值算音量圆的弧度(每个数值对应的度数)
+
+            var Vdegs = lastVolume*(360/30);
+            var Vr = Vdegs*Math.PI/180;
+            ctx.beginPath();
+            ctx.strokeStyle = "#589a0a";
+            ctx.lineWidth=4;
+            ctx.arc(cwidth/2,cheight/2,52,0-90*Math.PI/180,Vr-90*Math.PI/180,false);
+            ctx.stroke();
+            ctx.closePath();
+        }
+        //volume值0-30 0的时候会显示语音过小，不能返回结果
+        var listen = function(volume){
+            lastVolume = volume;
+        };
+        var draw = function(){
+            if(volumeWrapper.style.display == "none"){
+                cancelAnimationFrame(animationId);
+            }
+            volumeCircle(lastVolume);
+
+            animationId = requestAnimationFrame(draw);
+        };
+        var start = function(){
+            mic_pressed = true;
+            animationId = requestAnimationFrame(draw);
+            tip.innerHTML = '<p class="if-alert" style="padding-top: 120px"></p>';
+            volumeWrapper.style.display = "block";
+        };
+        var stop = function(){
+            mic_pressed = false;
+            $('.time-record').text(' ');
+            localStorage.removeItem('startTime');
+            clearInterval(timerSet);
+            volumeWrapper.style.display = "none";
+            tip.innerHTML = '<p class="if-alert" style="padding-top: 120px">重新录音</p>';
+            startBtn.src = 'img/startBtn.png';
+        };
+        return {
+            "listen":listen,
+            "start":start,
+            "stop":stop,
+            "volumeCircle":volumeCircle
+        };
+    })();
+
+    //默认显示灰色音量圆环
+    //volumeEvent.volumeCircle(0);
+    /***********************************************local Variables**********************************************************/
+
+    /**
+     * 初始化Session会话
+     */
+    var session = new IFlyIatSession({
+        "callback":{
+            "onResult": function (err, result) {
+                $('.time-record').text(' ');
+                localStorage.removeItem('startTime');
+                clearInterval(timerSet);
+                /* 若回调的err为空或错误码为0，则会话成功，可提取识别结果进行显示*/
+                if (err == null || err == undefined || err == 0) {
+                    if (result == '' || result == null){
+                        iat_result.innerHTML = "没有获取到评测结果";
+                    } else {
+                        iat_result.innerHTML = result;
+                        var obj = JSON.parse(result); //由JSON字符串转换为JSON对象
+                        totle_score.push(obj['totle_score'])
+                            localStorage.setItem('totleScore',totle_score);
+                        }
+                    /* 若回调的err不为空且错误码不为0，则会话失败，可提取错误码 */
+                } else {
+                    iat_result.innerHTML = 'error code : ' + err + ", error description : " + result;
+                    if(!localStorage.getItem('totleScore')){
+                        var btnContent='取消';
+                        var content = '<img src="img/anew.png" style="float:left; width:185px; height:156px; margin: -15px 0 0 -10px;"><h2 style="display:inline-block; width:200px;margin: 22px 0 0 20px; color:#6f729a; font-size:16px; text-align: left;">录制失败，是否重新录制？</h2>';
+                        var submit = function(){
+                            $('#xuebox_wrong_submit').remove();
+                            $('.dialog_mask').remove();
+                            play();
+                        };
+                        confirmPop(content,btnContent,submit);
+                    }
+                }
+                volumeEvent.stop();
+            },
+            "onVolume": function (volume) {
+                volumeEvent.listen(volume);
+            },
+            "onError":function(){
+                volumeEvent.stop();
+            },
+            "onProcess":function(status){
+                switch (status){
+                    case 'onStart':
+                        mic_pressed = true;
+                        tip.innerHTML = '服务初始化...';
+                        startBtn.src = 'img/record.png';
+                        $('.submit-text').css({display:'none'});
+                        $('.submit-img').css({display:'none'});
+                        break;
+                    case 'normalVolume':
+                    case 'started':
+                        tip.innerHTML = '录音中...';
+                        timerSetStart();
+                        break;
+                    case 'onStop':
+                        volumeEvent.stop();
+                        break;
+                    case 'onEnd':
+                        if(localStorage.getItem('totleScore')){
+                            $('.submit-text').css({display:'block'});
+                            $('.submit-img').css({display:'block'});
+                        }
+                        break;
+                    case 'lowVolume':
+                        tip.innerHTML = '录音中...(声音过小)';
+                        timerSetStart();
+                        break;
+                    default:
+                        tip.innerHTML = status;
+                }
+            }
+        }
+    });
+
+    if(!session.isSupport()){
+        tip.innerHTML = "当前浏览器不支持！";
+        return;
+    }
+
+    var play = function() {
+        if (!mic_pressed) {
+            var ssb_param = {
+                "ise_word": example[2],
+                "ise_category": example[1],
+                "params": "appid=57ce6e1c,appidkey=1bc0ad2f6c3d8661,bom=true,rstcd=utf8,category="+example[1]+",auf=audio/L16;rate=16000,ent="+example[0]+",aue=speex-wb;7"
+            };
+            iat_result.innerHTML = '   ';
+            /* 调用开始录音接口，通过function(volume)和function(err, obj)回调音量和识别结果 */
+            session.start(ssb_param);
+            volumeEvent.start();
+        }
+        else {
+            //停止麦克风录音，仍会返回已传录音的识别结果.
+            session.stop();
+        }
+    }
+
+    /**
+     * 取消本次会话识别
+     */
+    var cancel = function() {
+        session.cancel();
+    }
+
+    startBtn.addEventListener("click",function(){
+        if(!navigator.onLine){return false;}
+        if ($('.if-alert').text()=='重新录音'){
+            // 有未答題点击交卷
+            var btnContent='取消';
+            var content = '<img src="img/anew.png" style="float:left; width:185px; height:156px; margin: -15px 0 0 -10px;"><h2 style="display:inline-block; width:200px;margin: 22px 0 0 20px; color:#6f729a; font-size:16px; text-align: left;">你确定要重新录制吗？</h2>';
+            var submit = function(){
+                $('#xuebox_wrong_submit').remove();
+                $('.dialog_mask').remove();
+                play();
+            };
+            confirmPop(content,btnContent,submit);
+        }else {
+            play();
+        }
+    });
+    //页面不可见，断开麦克风调用
+    document.addEventListener("visibilitychange",function(){
+        if(document.hidden == true){
+            session.kill();
+        }
+    });
+    /**
+     * 点击确定按钮
+     * @param  {string} content 提示框内容
+     */
+    confirmPop = function(content,btnContent,submit){
+        xue.win({
+            id: 'wrong_submit',
+            title: false,
+            padding : '20px 20px 10px',
+            content : content,
+            close: false,
+            submitVal : '确定',
+            cancelVal : btnContent,
+            submit: submit,
+            cancel : 'true',
+            lock : true
+        });
+    }
+    /**
+     * 提交试卷完成后防止多次点击，添加遮罩
+     * @param
+     */
+    commitMask = function(){
+        var a = $('<div id="submit_mask"></div>');
+        var box = $('.submit-img');
+        a.css({
+            position: 'absolute',
+            left: box.offset().left,
+            top: box.offset().top,
+            width: box.width(),
+            height: box.height(),
+            zIndex: 1000
+        });
+        a.appendTo('body');
+        // 移除提示交卷弹层
+        $('#xuebox_wrong_submit').remove();
+        $('.dialog_mask').remove();
+    }
+
+    // 点击交卷
+    $('body').on('click','.submit-img',function(){
+        // 有未答題点击交卷
+        var btnContent='取消';
+        var content = '<img src="img/submitPrompt.png" style="float:left; width:165px; height:145px; margin: -15px 0 0 -10px;"><h2 style="display:inline-block; width:205px;margin: 22px 0 0 30px; color:#6f729a; font-size:16px; text-align: left;">你确定要提交吗？</h2>';
+        var submit = function(){
+            commitMask();
+            ajaxExamSubmit();
+        };
+        confirmPop(content,btnContent,submit);
+    })
+
+    window.addEventListener('offline', function(e) {
+        volumeEvent.stop();
+        session.cancel();
+        session.kill();
+    });
+})(document)
