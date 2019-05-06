@@ -1,2 +1,2 @@
 # openai_sdk js
-学而思网校AI开发平台_jsSDK
+学而思网校AI开放平台_jsSDK
