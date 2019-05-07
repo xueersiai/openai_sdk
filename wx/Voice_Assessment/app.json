@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/newpage/newpage",
+    "pages/index/index",
+    "pages/logs/logs",
+    "lib/followResult/followResult"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTitleText": "WeChat",
+    "navigationBarTextStyle": "black"
+  },
+  "sitemapLocation": "sitemap.json"
+}
