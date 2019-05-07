@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	<button id="start">开始</button>
+	<button id="end">结束</button>
+	<div>
+		<div>
+			音量：
+			<span id="volume"></span>
+		</div>
+		<div>
+			结果：
+			<span id="result"></span>
+		</div>
+		<div>
+			错误：
+			<span id="error"></span>
+		</div>
+		<div>
+			音频
+			<audio src="" id="audio" controls></audio>
+		</div>
+	</div>
+	<script type="text/javascript" src="js/jquery.min.js"></script>
+	<script type="text/javascript" src="js/ise.js"></script>
+	<script type="text/javascript">
+		
+		// string类型
+		var testid="1"
+		// string类型
+	    var liveid="2"
+	    var stuid=3
+
+		/**
+		 * 录音状态
+		 * 0:初始化 1：点击开始 2：录音中 3：点击停止 4：返回正常结果 5：返回错误
+		 */
+		var process = {
+			'state' : 0
+		}
+
+		// 回调事件	
+		var on = {
+			// 音量发生变化时
+			volume : function (value){
+				$("#volume").text(value)
+			},
+			// 点击开始
+			start : function (){
+				$("#volume").text('');
+				$("#audio").attr('src','');
+				$("#result").text('');
+				$("#error").text('');
+			},
+			// 点击结束
+			stop : function (){
+				var file = session.getMp3Blob();
+				var url = URL.createObjectURL(file);
+	           	$("#audio").attr('src',url);
+			},
+			// 录音中
+			record : function () {
+				process.state = 2
+			},
+			// 处理返回结果
+			result : function (result) {
+				process.state = 4
+				console.log(result)
+				result = JSON.stringify(result)
+				$("#result").html($("#result").text()+'<br/>'+result);
+			},
+			// 处理错误
+			error : function (err) {
+				process.state = 5
+				console.log(err)
+				$("#error").html(err);
+			},
+			// 音量太小提示
+			low : function () {
+
+			}
+		}
+		var session = new XueASR({
+			"callback":{
+				"onResult" : on.result,
+				"onVolume": on.volume,
+				"onError": on.error,
+				"onProcess":function(status){
+					switch (status){
+						// 录音中
+						case 'onRecord':
+							on.record();
+							break;
+						// 停止
+						case 'onStop':
+							on.stop();
+							break;
+						// 开始
+						case 'onStart':
+							on.start();
+							break;
+						// 声音过小
+						case 'lowVolume':
+							on.low();
+							break;
+						default:
+					}
+				}
+			}
+		});
+		// 当点击了开始
+		$("#start").click(function(){
+			// 不能重复点击
+			if (process.state == 1) return;
+			process.state = 1
+			var params = {}
+
+			// 英文
+			// params.webscoketURL="ws://192.168.34.145:18092/v1/api/speech/evl/en?app_key=8102b22a5e81e840176d9f381ec6f837"
+			// params.ise_word="how are you";
+			// params.pid="1103101";
+
+			// 中文
+			params.webscoketURL="ws://192.168.34.145:18092/v1/api/speech/evl/zh?app_key=8102b22a5e81e840176d9f381ec6f837";
+			params.ise_word="好雨知时节，当春乃发生。随风潜入夜，润物细无声。";
+			params.pid="1103103";
+
+			params.mergeNum=1;
+			params.resendURL='http://asr.xueersi.com/post';
+			params.resend=true;
+			params.resendInterval=5000;
+			params.testid = testid
+			params.liveid = liveid
+			params.stuid = stuid
+			session.start(params)
+		})
+
+		// 点击了结束
+		$("#end").click(function(){
+			process.state = 3
+			session.stop()
+		})
+	</script>
+</body>
+</html>
