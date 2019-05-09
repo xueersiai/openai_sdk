@@ -132,8 +132,8 @@ var XueASR = (function (window, navigator) {
 	      switch (e.data.cmd) {
 			case 'end':
 				// console.log('e.data', e.data);
+				recorderMethod.lastBUffer(e.data.buf)
 				var dataStr = e.data.buf
-				console.log('dataStr', dataStr)
 				var koko = flatten(dataStr)
 				recorderMethod.complete(koko);
 				
@@ -191,9 +191,7 @@ var XueASR = (function (window, navigator) {
 
 		// websocket收到后台传来信息
 		var onmessage = function (obj) {
-			console.log('obj-==-=-', obj.data)
 			var result = JSON.parse(obj.data);
-			console.log('objresult', result)
 			recorderMethod.analysisResult(result)
 		};
 
@@ -279,7 +277,13 @@ var XueASR = (function (window, navigator) {
 		// 所有发送数据是否得到返回值的标记数组
 		var	fileState = ['true'];
 		var bufferToString
-    	
+		
+		
+		var lastBUffer = function(data) {
+			recorderFile = new Blob(data, {"type": "audio/mp3"});
+			// 保存所有音频数据到mp3Blob			
+			mp3Blob = new Blob([mp3Blob, recorderFile]);
+		}
     	// 接收到编码为MP3的数据后发送
 		var complete = function (data) {	
 			// 当前sid如果发送过负包，则相同sid则不再发送
@@ -290,9 +294,11 @@ var XueASR = (function (window, navigator) {
             	}
             }
 
-			recorderFile = new Blob(data, {"type": "audio/mp3"});
-			// 保存所有音频数据到mp3Blob			
-			mp3Blob = new Blob([mp3Blob, recorderFile]);
+			// recorderFile = new Blob(data, {"type": "audio/mp3"});
+			// // 保存所有音频数据到mp3Blob			
+			// mp3Blob = new Blob([mp3Blob, recorderFile]);
+			// console.log('mp3Blob', mp3Blob)
+
 
 			// 记录开始时间
             if (parseInt(idx) == 1) {
@@ -431,10 +437,8 @@ var XueASR = (function (window, navigator) {
 		}
 		// 开始录音
 		var start = function () {
-			console.log('start click');
 			// 连接websocket
 			if('undefined' == typeof (websocket) || websocket.readyState != 1){
-				console.log('start click----');
 				websocketOvertime = true;
 				// 线上
 				websocket = new WebSocket(asrParam.webscoketURL);
@@ -578,7 +582,6 @@ var XueASR = (function (window, navigator) {
 		}
 		// 发送录制的音频
 		var sendRecord = function () {
-			console.log('-============',JSON.parse(sendFile) )
 			// 当websocket是连接状态时，发包
 			if (websocket.readyState == '1') {
 				// 当前有未发送的数据，先发送此数据
@@ -734,7 +737,8 @@ var XueASR = (function (window, navigator) {
 			"getMp3Blob": getMp3Blob,
 			"initMedia": initMedia,
 			"analysisResult": analysisResult,
-			"checkStatus": checkStatus
+			"checkStatus": checkStatus,
+			"lastBUffer":lastBUffer
 		} 
 	})();
 
