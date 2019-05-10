@@ -22,14 +22,14 @@ const formatNumber = n => {
 /**
  *  这个纯是一个测试。这是测试 
  */
-function showtest () {
+function showtest() {
   let a = '{"id":123,"pid":"你好"}';
   let b = JSON.stringify(a)
   // var fileData = new Uint8Array(b)
   let uint8array = new encoding.TextEncoder().encode(b);
   console.log(uint8array);
   // console.log('diaoyongwole')
-  
+
   console.log(new encoding.TextDecoder().decode(uint8array))
 
   return uint8array
@@ -39,7 +39,7 @@ function showtest () {
  *  将字符串转化为buffer
  * 
  */
-function strToBuffer (str) {
+function strToBuffer(str) {
   let uint8array = new encoding.TextEncoder().encode(str);
   return uint8array
 }
@@ -56,7 +56,7 @@ function bufferToStr(fileData) {
 /**
  * 链接各个buffer
  */
-function concatenate (resultConstructor, ...arrays) {
+function concatenate(resultConstructor, ...arrays) {
   let totalLength = 0;
   for (let arr of arrays) {
     totalLength += arr.length;
@@ -81,30 +81,31 @@ function concatenate (resultConstructor, ...arrays) {
  *  newbyteLength1   分包音频
  */
 
-function getDataList(randomNum, assess_ref, idx ,newbyteLength1) {
-
+function getDataList(randomNum, assess_ref, idx, newbyteLength1, aidata) {
+  console.log('这里是拼装数据的', aidata)
+  let showdata = aidata
   let title = 'ai-test' + randomNum
   let sendstr = JSON.stringify({
     "common": {
-        "sid": 'SKX-test' + randomNum,  // sid，全局唯一
-        "idx": idx,                                      //分段音频的次序 
-        "compress": "2"
+      "sid": 'SKX-test' + randomNum,  // sid，全局唯一
+      "idx": idx,                                      //分段音频的次序 
+      "compress": "2"
     },
     "spec": {
-        "assess_ref": assess_ref,                  //测评文本 
-        "vad_max_sec": "600",                            //默认30s, 说话最大时长 
-        "vad_pause_sec": "3",                           //默认5s, 说话后静音停止时间 
-        "vad_st_sil_sec": "5",                          //默认为10s, 说话前最大静音时长 
-        "sil_tips_sec": "200",                          //静音时长提示，单位是10ms 
-        "voiceless_penal": "1",                         //清音惩罚选项，测评单词时对清音发音好坏更敏感
-        "multi_sent_loop": "0",                         //单句测评与多句测评模式选项，多句测评模式置为1
-        "need_out_wd_sec": "0",                         //测评文本时间码返回选项，返回对应单词或字的起始时间
-        "extra": {}                                     //扩展字段，可有可无，方便后续扩展
+      "assess_ref": assess_ref,                  //测评文本 
+      "vad_max_sec": showdata.vad_max_sec || "90",                    //默认30s, 说话最大时长 
+      "vad_pause_sec": showdata.vad_pause_sec || "3",                 //默认5s, 说话后静音停止时间 
+      "vad_st_sil_sec": showdata.vad_st_sil_sec || "3",               //默认为10s, 说话前最大静音时长 
+      "sil_tips_sec": showdata.sil_tips_sec || "200",                 //静音时长提示，单位是10ms 
+      "voiceless_penal": showdata.voiceless_penal || "1",             //清音惩罚选项，测评单词时对清音发音好坏更敏感
+      "multi_sent_loop": showdata.multi_sent_loop || "1",             //单句测评与多句测评模式选项，多句测评模式置为1
+      "need_out_wd_sec": "0",                         //测评文本时间码返回选项，返回对应单词或字的起始时间
+      "extra": {}                                     //扩展字段，可有可无，方便后续扩展
     },
     "audio": newbyteLength1                             //音频字节流,需要转为二进制流
-})
+  })
 
-      
+
   return sendstr
 }
 
@@ -176,7 +177,7 @@ module.exports = {
   showtest: showtest,
   strToBuffer: strToBuffer,
   bufferToStr: bufferToStr,
-  concatenate:concatenate,
+  concatenate: concatenate,
   getDataList: getDataList,
   _arrayBufferToBase64: _arrayBufferToBase64,
   joinParams: joinParams

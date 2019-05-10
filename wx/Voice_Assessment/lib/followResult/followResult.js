@@ -12,9 +12,8 @@ Page({
     pronScore: '', // 发音分
     innerAudioContext: ''
   },
-  onLoad: function () {
-    
-    console.log('选我了选我了 开心开心',getApp().globalData.testResult)
+  onLoad: function () {    
+    // console.log('返回',getApp().globalData.testResult)
     // this.showSentence(getApp().globalData.testResult[0].data.asr_content.nbest)
     this.showSentence(getApp().globalData.testResult)
   },
@@ -62,18 +61,13 @@ Page({
         }
         console.log('skx-sentence1',sentence)
         console.log('skx-low',low)
-        // this.setData({
-        //   lowWord: low
-        // })
-        // console.log(word)
-        // console.log(word[0])
-        // console.log(word[1])
       }
       console.log('skx-sentence2',sentence)
       sentenceResult.push({
         'sentence': sentence,
         'lowWord': low,
-        'myscore': resultTotal[j].spec.evl_scores.total_score
+        'myscore': resultTotal[j].spec.evl_scores.total_score,
+        'nbm': 'resultText' + j
         })
       totalScore += resultTotal[j].spec.evl_scores.total_score
       contScore += resultTotal[j].spec.evl_scores.cont_score
@@ -100,14 +94,15 @@ Page({
     * 4.target为Page对象,一般为this(必填)
     * 5.imagePadding为当图片自适应是左右的单一padding(默认为0,可选)
     */
-    
-    WxParse.wxParse('resultText0', 'html', sentenceResult[0].sentence, this)
-    // WxParse.wxParse('resultText1', 'html', sentenceResult[1].sentence, this)
-    // WxParse.wxParse('resultText2', 'html', sentenceResult[2].sentence, this)
-    // WxParse.wxParse('resultText3', 'html', sentenceResult[3].sentence, this)
-    // this.setData({
-    //   'resultText': sentence
-    // })
+    // console.log('这是几呀？', sentenceResult)
+    var that = this;
+    for (let i = 0; i < sentenceResult.length; i++) {
+      WxParse.wxParse('reply' + i, 'html', sentenceResult[i].sentence, that);
+      if (i === sentenceResult.length - 1) {
+        WxParse.wxParseTemArray("replyTemArray", 'reply', sentenceResult.length, that)
+      }
+    }
+
   }, 
   // 正确的发音
   rightVoice: function (e) {

@@ -24,19 +24,17 @@
   </view>
   <!-- 每个句子得分情况 -->
   <view class="results">
-    <!-- 第一句 -->
-    <view wx:if="{{resultAll.length >= 1}}" class="result-item">
-      <!-- 句子标红标绿 -->
-      <view class="result-info"><template is="wxParse" data="{{wxParseData:resultText0.nodes}}"/></view>
+    <view wx:if="{{resultAll.length >= 1}}" wx:for="{{replyTemArray}}" wx:key="" class="result-item">
+      <view class="result-info"><template is="wxParse" data="{{wxParseData:item}}"/></view>
       <!-- 读音 -->
       <view class="result-button">
-        <view class="myVoice" bindtap="bindMinePlay" >我的读音<text class="score">{{sentenceResult[0].myscore}}</text></view>
+        <view class="myVoice" bindtap="bindMinePlay" >我的读音<text class="score">{{sentenceResult[index].myscore}}</text></view>
         <view class="original" bindtap="bindNative" data-pageindex="0">原音</view>
       </view>
       <!-- 分割线 -->
       <view class="line"></view>
       <!-- 纠错单词 -->
-      <view class="error" wx:for="{{sentenceResult[0].lowWord}}" wx:for-index="idx">
+      <view class="error" wx:for="{{sentenceResult[index].lowWord}}" wx:for-index="idx">
         <view class="error-item" bindtap="rightVoice"  data-pageindex="0" data-wordindex='{{item.index}}'>
           <!-- <image class="voice" src="/images/voice-icon.png" ></image> -->
           <text class="error-word">{{item.word}}</text>
