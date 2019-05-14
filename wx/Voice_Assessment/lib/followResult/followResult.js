@@ -102,7 +102,7 @@ Page({
         WxParse.wxParseTemArray("replyTemArray", 'reply', sentenceResult.length, that)
       }
     }
-
+    getApp().globalData.testResult = [];
   }, 
   // 正确的发音
   rightVoice: function (e) {
