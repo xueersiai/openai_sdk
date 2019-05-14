@@ -69,6 +69,7 @@ function showtest(event, initData, accessModeData, showinitAidata) {
   console.log('测评结果是', showEvaluationtype)
   postdata.showassess_ref = initData.cpinfo;
   postdata.originUrl = initData.cpluyinurl;
+  getApp().globalData.cpluyinurl = initData.cpluyinurl;
   postdata.initAiData = showinitAidata;
   event.setData({
     postList: postdata

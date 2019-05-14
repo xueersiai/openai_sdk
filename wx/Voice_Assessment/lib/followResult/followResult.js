@@ -169,7 +169,7 @@ Page({
     // debugger
     // console.log(this.data.stopVoice)
     var _this = this
-    var recordTextsSrc = getApp().globalData.recordTexts
+    var recordTextsSrc = getApp().globalData.cpluyinurl
     // console.log(recordTextsSrc[0])
     if (this.data.innerAudioContext == '') {
       var innerAudioContext = wx.createInnerAudioContext();
@@ -179,7 +179,7 @@ Page({
     }
     // console.log(this.data.index)
     console.log(this.data.innerAudioContext)
-    this.data.innerAudioContext.src = recordTextsSrc[pageidx] //这里可以是录音的临时路径
+    this.data.innerAudioContext.src = recordTextsSrc//这里可以是录音的临时路径
     this.data.innerAudioContext.play()
     this.data.innerAudioContext.onPlay(function () {
       // this.data.innerAudioContext.pause()

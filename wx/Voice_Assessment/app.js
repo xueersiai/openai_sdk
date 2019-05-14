@@ -35,8 +35,8 @@ App({
   },
   globalData: {
     userInfo: null, // 每句录音 、
-    recordTexts: [ 'http://111.206.170.217:12001/waiyanshe/record/one/oneSen.m4a', 'http://111.206.170.217:12001/waiyanshe/record/one/twoSen.m4a', 'http://111.206.170.217:12001/waiyanshe/record/three/第三句.m4a', 'http://111.206.170.217:12001/waiyanshe/record/four/第四句.m4a', ], // 储存socket 返回结果 
-    testResult: [], // 
+    testResult: [], // 返回结果
     myRecording: '',
+    cpluyinurl:'' //原音地址
   }
 })
