@@ -26,10 +26,10 @@ Page({
  */
   onLoad: function (options) {
     // 1 英文 2 中文
-    let ceping = 2
-    // 测评对照阅读的文本 
-    let cpinfo = '你好 | 明天 | 会更好'//
-    // 测评参考录音
+    let ceping = 2        
+    // 测评对照阅读的文本    英文例句  Whatever is worth doing is worth doing well.
+    let cpinfo = '任何值得做的，就把它做好'  
+    // 测评参考录音       英文例句地址    http://111.206.170.217:12001/ai/audios/Example-en.mp3
     let cpluyinurl = 'http://111.206.170.217:12001/waiyanshe/record/one/oneSen.m4a'
     //接入方式 1快速接入  2安全接入
     let access_mode = 1
