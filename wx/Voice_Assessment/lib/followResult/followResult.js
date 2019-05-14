@@ -198,22 +198,5 @@ Page({
       // nativeVoiceImg: '/images/playing.png',
       // nativeText: '播放中',
     })
-    // 判断停止还是播放
-    // if (this.data.stopVoice) {
-    //   this.data.innerAudioContext.src = this.data.src;  //这里可以是录音的临时路径
-    //   this.data.innerAudioContext.play()
-    //   this.setData({
-    //     nativeVoiceImg: '/images/playing.png',
-    //     nativeText: '播放中',
-    //     stopVoice: false
-    //   })
-    // } else {
-    //   this.data.innerAudioContext.pause()
-    //   this.setData({
-    //     nativeVoiceImg: '/images/myvoice.png',
-    //     nativeText: '暂停',
-    //     stopVoice: true
-    //   })
-    // }
   }
 })
