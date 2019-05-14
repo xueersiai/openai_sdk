@@ -133,10 +133,10 @@ var XueASR = (function (window, navigator) {
 			case 'end':
 				// console.log('e.data', e.data);
 				recorderMethod.lastBUffer(e.data.buf)
+				console.log('e.data.buf', e.data.buf)
 				var dataStr = e.data.buf
 				var koko = flatten(dataStr)
 				recorderMethod.complete(koko);
-				
 	          	break;
 	        case 'error':
 	          console.log('error');
@@ -226,10 +226,6 @@ var XueASR = (function (window, navigator) {
 		var	strblob;
 		// 发送的标识数据
 		var	sendstr = '';
-		 // 分隔符ABC
-		var	splitA = '--PP**ASR**LIB_a';
-		var	splitB = '--PP**ASR**LIB_b';
-		var	splitC = '--PP**ASR**LIB_c';
 		// 是否点击过开始
 		var	firstClick = false;
 		// 是否是当前文本的最后一个数据包
@@ -276,14 +272,17 @@ var XueASR = (function (window, navigator) {
 		var	repeatId = "";
 		// 所有发送数据是否得到返回值的标记数组
 		var	fileState = ['true'];
-		var bufferToString
+		var bufferToString;
+		var wrapArray = []
 		
 		
 		var lastBUffer = function(data) {
 			recorderFile = new Blob(data, {"type": "audio/mp3"});
 			// 保存所有音频数据到mp3Blob			
 			mp3Blob = new Blob([mp3Blob, recorderFile]);
+			console.log('mp3Blob-', data, mp3Blob)
 		}
+
     	// 接收到编码为MP3的数据后发送
 		var complete = function (data) {	
 			// 当前sid如果发送过负包，则相同sid则不再发送
@@ -292,13 +291,7 @@ var XueASR = (function (window, navigator) {
             		console.log('finishSid');
             		return ;
             	}
-            }
-
-			// recorderFile = new Blob(data, {"type": "audio/mp3"});
-			// // 保存所有音频数据到mp3Blob			
-			// mp3Blob = new Blob([mp3Blob, recorderFile]);
-			// console.log('mp3Blob', mp3Blob)
-
+			}
 
 			// 记录开始时间
             if (parseInt(idx) == 1) {
@@ -350,9 +343,9 @@ var XueASR = (function (window, navigator) {
 					
 							"voiceless_penal": "1",
 					
-							"multi_sent_loop": "0",
+							"multi_sent_loop": asrParam.multi_sent_loop,
 					
-							"need_out_wd_sec": "1",
+							"need_out_wd_sec": "0",
 							"extra":{
 								"testid":asrParam.testid,
 								"liveid":asrParam.liveid
@@ -388,7 +381,6 @@ var XueASR = (function (window, navigator) {
             		mergeIndex++;
             	}
             }else{
-				console.log('22222222', data)
             	// 已合够规定包数，进行发包
             	mergeIndex = 1;
 				bufferToString = utils.arrayBufferToBase64(data)
@@ -410,9 +402,9 @@ var XueASR = (function (window, navigator) {
 				
 						"voiceless_penal": "1",
 				
-						"multi_sent_loop": "0",
+						"multi_sent_loop": asrParam.multi_sent_loop,
 				
-						"need_out_wd_sec": "1",
+						"need_out_wd_sec": "0",
 						"extra":{
 							"testid":asrParam.testid,
 							"liveid":asrParam.liveid
@@ -511,7 +503,7 @@ var XueASR = (function (window, navigator) {
 					"sil_tips_sec": "200",
 					"voiceless_penal": "1",
 					"multi_sent_loop": "0",
-					"need_out_wd_sec": "1",
+					"need_out_wd_sec": "0",
 					"extra":{
 						"testid":asrParam.testid,
 						"liveid":asrParam.liveid
@@ -593,6 +585,7 @@ var XueASR = (function (window, navigator) {
 					saveData=[];
 				}
 				// 发包
+				console.log('----------------', sendFile)
 				websocket.send(sendFile);
 			} else {
 				// 当未连接时，暂存数据
@@ -656,7 +649,10 @@ var XueASR = (function (window, navigator) {
 	        };
 
 	        volumeSource.connect(volumeScriptNode);
-	        volumeScriptNode.connect(audioCtx.destination);
+			volumeScriptNode.connect(audioCtx.destination);
+			
+
+			
 
 	        // 用于发送音频数据
 			recordSource = audioCtx.createMediaStreamSource(stream);
@@ -705,8 +701,33 @@ var XueASR = (function (window, navigator) {
     		if (result.data.common.err_no == 0 && index >= 0) {
     			fileState[index]='true';
     		}
-
-	    	callback.onResult(result)
+			console.log('-result---', result.data)
+			if(asrParam.multi_sent_loop === '0'){
+				if(result.data.spec.evl_flag === "fnl") { // 结束
+					wrapArray.push(result.data)
+					console.log('===============', wrapArray)
+					if(wrapArray.length>0){
+						callback.onResult(wrapArray)
+					} else {
+						callback.onResult(`${asrParam.text}。您没有答对~ 请再接再厉`)
+					}
+					
+				}
+			}else if(asrParam.multi_sent_loop === '1'){
+				var showIndex = result.data.spec.new_sen_idx
+				if(showIndex >= 0){
+					wrapArray.push(result.data)
+					
+				}
+				if(result.data.spec.evl_flag === "fnl") { // 结束
+					if(wrapArray.length>0){
+						callback.onResult(wrapArray)
+					} else {
+						callback.onResult(`${asrParam.text}。您没有答对~ 请再接再厉`)
+					}
+				}
+			}
+			// callback.onResult(result)
 		}
 		// 检查返回结果状态码
 		// 当出错时，返回对应错误码
@@ -870,7 +891,8 @@ var XueASR = (function (window, navigator) {
             asrParam.resendInterval = params_obj.resendInterval || 5000
             asrParam.testid = params_obj.testid || "1";
             asrParam.liveid = params_obj.liveid || "1";
-            asrParam.stuid = params_obj.stuid || 1;
+			asrParam.stuid = params_obj.stuid || 1;
+			asrParam.multi_sent_loop = params_obj.multi_sent_loop || 0;
     	},
     	// 检测是否支持相关方法
     	"checkIsSupport": function () {
