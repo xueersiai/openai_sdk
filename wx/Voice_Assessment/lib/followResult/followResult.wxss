@@ -101,7 +101,7 @@ page {
   justify-content: center
 }
 .myVoice .score {
-  font-size: 38rpx;
+  font-size: 40rpx;
   font-family: PingFangSC-Medium;
   font-weight: 500;
   color: #688BFF;

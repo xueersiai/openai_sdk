@@ -9,16 +9,10 @@ Page({
     postList: sdkdemo.showdata,
   },
   /**
-  * 点击播放原音按钮
-  */
-  bindNative: function () {
-    sdkdemo.playRecording(this)  //  播放音频   
-  },
-  /**
-   * 初始化方法
-   */
+    * 初始化方法
+    */
   initsystem: function () {
-    getApp().globalData.testResult=[];
+    getApp().globalData.testResult = [];
     this.onLoad();
   },
   /**
@@ -28,23 +22,36 @@ Page({
     sdkdemo.clickRecording(this)  //  唤起接口
   },
   /**
-   * 生命周期函数--监听页面加载
-   */
+ * 生命周期函数--监听页面加载
+ */
   onLoad: function (options) {
     // 1 英文 2 中文
-    let ceping = 2        
-    // 测评对照阅读的文本
-    let cpinfo = '您好这是一个测试测试内容很简洁，简洁到一句两句话说不清楚'  
+    let ceping = 2
+    // 测评对照阅读的文本 
+    let cpinfo = '你好 | 明天 | 会更好'//
     // 测评参考录音
     let cpluyinurl = 'http://111.206.170.217:12001/waiyanshe/record/one/oneSen.m4a'
     //接入方式 1快速接入  2安全接入
-    let access_mode = 2
+    let access_mode = 1
     //app_key
     let app_key = '8102b22a5e81e840176d9f381ec6f837'
     //app_secret
     let app_secret = 'f308ce31e42e366093c01e5283f1acc02c2cd47492f5c8633b55d58930be2b2c'
 
-    //  初始化数据
+    //默认30s, 最大说话时长，最大可设置90s 
+    let vad_max_sec = '90';
+    // 默认5s, 说话后静音停止时间
+    let vad_pause_sec = '3';
+    //默认为10s, 说话前最大静音时长
+    let vad_st_sil_sec = '3';
+    //静音时长提示，单位是10ms  
+    let sil_tips_sec = '200';
+    //清音惩罚选项，测评单词时对清音发音好坏更敏感
+    let voiceless_penal = '1';
+    //单句测评与多句测评模式选项，多句测评模式置为1 单句测评为0
+    let multi_sent_loop = '0';
+
+    //  初始化数据 
     let initData = {
       "ceping": ceping,
       "cpinfo": cpinfo,
@@ -56,9 +63,16 @@ Page({
       "app_key": app_key,
       "app_secret": app_secret
     }
-    sdkdemo.showtest(this, initData, accessModeData)
+    let initAiData = {
+      "vad_max_sec": vad_max_sec,
+      "vad_pause_sec": vad_pause_sec,
+      "vad_st_sil_sec": vad_st_sil_sec,
+      "sil_tips_sec": sil_tips_sec,
+      "voiceless_penal": voiceless_penal,
+      "multi_sent_loop": multi_sent_loop
+    }
+    sdkdemo.showtest(this, initData, accessModeData, initAiData)
   },
-
   /**
    * 生命周期函数--监听页面初次渲染完成
    */

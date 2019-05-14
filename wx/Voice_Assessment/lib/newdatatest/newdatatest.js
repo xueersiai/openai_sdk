@@ -36,7 +36,10 @@ let util1 = require('../demo.js')
 let errorflag = '5' // 测试初始化是否有问题
 let initErrorTitle = '' // 参数错误信息
 let showsocketurl ='' //展示socketurl
-let errorTotal = true;
+let errorTotal = true;  // 录音错误处理
+let showEvaluationtype = '' // 多句测评还是单句测评
+let datasEvaluation = [] //存放测评结果
+
 
 /**
  *  目前页面所需数据
@@ -66,6 +69,7 @@ let showdata = {
   showboolean: false, // 未点击中文英文 按钮的时候 关于 socket按钮 隐藏
   pagetitle: '语音页面',
   originUrl: '', // 原音路径
+  initAiData : {} // 存放操作底层AI数据
 }
 
 
@@ -78,19 +82,23 @@ let showdata = {
  * 参数3 socket链接集合  accessModeData
  */
 
-function showtest(event, initData, accessModeData) {
+function showtest(event, initData, accessModeData, showinitAidata) {
 
   let initflag = initerror(event, initData);
   if (initflag !== "5") return
   // console.log(initflag)
   //  更新传递参数文本话术
   // 缺少当前文本播放音频
-  let postdata = event.data.postList
-  postdata.showassess_ref = initData.cpinfo
-  postdata.originUrl = initData.cpluyinurl
+  let postdata = event.data.postList;
+  showEvaluationtype = showinitAidata.multi_sent_loop
+  console.log('测评结果是', showEvaluationtype)
+  postdata.showassess_ref = initData.cpinfo;
+  postdata.originUrl = initData.cpluyinurl;
+  postdata.initAiData = showinitAidata;
   event.setData({
     postList: postdata
   })
+  console.log(event.data)
   // 缺少当前文本播放音频 
   // 更新传递参数文本话术
   /**
@@ -381,25 +389,28 @@ function clickRecording(event) {
   console.log('newdata', newdata)
   // ！！! 录音重点分片式录音发送，根据分片每一片的大小来进行反复调用，直到设定事件结束或者手动结束
   recorderManager.onFrameRecorded((res) => {
+    console.log('石可心返回音频',res)
     const {
       frameBuffer
     } = res;
     // //  获取分片数据
     let newbyteLength = new Uint8Array(res.frameBuffer)
     let newbyteLength1 = []
-    if (systemtype == "devtools") {
-      newbyteLength1 = newbyteLength
-    } else if (systemtype == "ios") {
-      newbyteLength1 = newbyteLength
-    } else if (systemtype == "android") {
-      newbyteLength1 = newbyteLength.slice(4, newbyteLength.length - 3)
-    }
-    console.log(newbyteLength1)
+    console.log('newbyteLength',newbyteLength)
+    // if (systemtype == "devtools") {
+    //   newbyteLength1 = newbyteLength
+    // } else if (systemtype == "ios") {
+    //   newbyteLength1 = newbyteLength
+    // } else if (systemtype == "android") {
+    //   newbyteLength1 = newbyteLength.slice(4, newbyteLength.length - 3)
+    // }
+    newbyteLength1 = newbyteLength
+    console.log('newbyteLength1',newbyteLength1)
     let newnewbyteLength1 = wx.arrayBufferToBase64(newbyteLength1)
     // 正常发包idx 数字累加 最后一包为负值
     newidx = res.isLastFrame ? '-' + (parseInt(newidx) + 1).toString() : (parseInt(newidx) + 1).toString()
     console.log('shikexin-idx', newidx)
-    let sendstr = util.getDataList(randomNum, newdata.showassess_ref, newidx, newnewbyteLength1);
+    let sendstr = util.getDataList(randomNum, newdata.showassess_ref, newidx, newnewbyteLength1, newdata.initAiData);
     // console.log('封装会来的数据数据包', sendstr);
     //拼装数据进行传输
     pushSoecket(sendstr);
@@ -466,18 +477,8 @@ function websocketCallBack() {
       return
     }
     let newstatus = data.data.status 
-    if (newstatus == 1 || newstatus == 2 || newstatus == 3 || newstatus == 10 || newstatus == 11 ) {
-      wx.showToast({
-        title: '请重读',
-        icon: 'none',
-        duration: 1000,
-        success: function () {
-          wx.onSocketClose(function (res) {
-            console.log('WebSocket 已关闭！')
-          })
-        }
-      })
-    } else {
+    // 单句测评
+    if (showEvaluationtype === '0'){
       if (newdata.spec.evl_flag === "fnl") {
         getApp().globalData.testResult.push(newdata)
         closeRecording()
@@ -495,10 +496,68 @@ function websocketCallBack() {
             // me.socket.close()
           }
         })
+      }  
+       // 多句测评
+    } else if (showEvaluationtype === '1') {
+
+      let showindex = newdata.spec.new_sen_idx
+      console.log(showindex)
+      if (showindex >= 0 ){
+        getApp().globalData.testResult.push(newdata)
       }
+      console.log('全中结果', getApp().globalData.testResult)
+      if (newdata.spec.evl_flag === "fnl") { 
+        wx.showToast({
+          title: '展示得分结果',
+          icon: 'success',
+          duration: 5000,
+          success: function () {
+            wx.navigateTo({
+              url: '../../lib/followResult/followResult',
+            })
+            // me.socket.close()
+          }
+        })
+
+
+      }
+
+      // closeRecording()
+      // // 得分遮罩
+      // console.log('getApp().globalData.testResult', getApp().globalData.testResult)
+      // return
+      // wx.showToast({
+      //   title: '您的评分' + (newdata.spec.evl_scores.total_score).toString() + '分',
+      //   icon: 'success',
+      //   duration: 5000,
+      //   success: function () {
+      //     wx.navigateTo({
+      //       url: '../../lib/followResult/followResult',
+      //     })
+      //     // me.socket.close()
+      //   }
+      // })
+
+
     }
+
+
+
+
   })
 }
+
+
+/**
+ * 前往结果页 
+ */
+function gotoResultpage () {
+
+
+
+
+}
+
 
 
 /**
