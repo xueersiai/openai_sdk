@@ -1,32 +1,9 @@
 /**
  * 语音封装包裹第一版，   名称：二把刀
- * 
  * by：石可心
- * 
- * 欠缺： 引用方法自检 ！  报错回调
- * 
- * 等待调通数据等俊玺老师或者杨挺老师来打通数据
- * 
- * 
- * 理想状态 
- * 1，所有update 数据提取一个共有方法    
- * 2，所有的错误处理提取一个错误方法  错误处理 init已经进行补充
- * 
- * 
- * 
- * 第一步：封装方法
- * 第二步：拆分 拆分出一个方法 一个方法
- * 第三部：整理总结问题  
- * 
- * 明天需要看结果展示页面---》 展示结果为何是树形排开的 还有下面的关键词语是否有跟读  
- * 
- * 需要问产品是否有单个文字包以及单词包 
- * 词典过大，查看是否可以降低在500kb 
- * 
- * 
- * showdata 整理字段。 初步SDK已经完成
- * 查看是否可以继续深度去抽离一下 
- * 
+ * wx: Skx1234567890
+ * 注：请使用小程序开发真机调试  
+ * 小程序开发版本： v1.02.1904090
  * 
  */
 
@@ -35,10 +12,8 @@ let util = require('../utils/util.js')
 let util1 = require('../demo.js')
 let errorflag = '5' // 测试初始化是否有问题
 let initErrorTitle = '' // 参数错误信息
-let showsocketurl ='' //展示socketurl
 let errorTotal = true;  // 录音错误处理
 let showEvaluationtype = '' // 多句测评还是单句测评
-let datasEvaluation = [] //存放测评结果
 
 
 /**
@@ -243,7 +218,6 @@ function showurl(accessModeData) {
  * 
  */
 function linkSocket(socketurl) {
-  showsocketurl = socketurl;
   console.log('socket链接地址', socketurl)
   let requestsocket = wx.connectSocket({
     url: socketurl,
@@ -518,45 +492,11 @@ function websocketCallBack() {
             // me.socket.close()
           }
         })
-
-
       }
-
-      // closeRecording()
-      // // 得分遮罩
-      // console.log('getApp().globalData.testResult', getApp().globalData.testResult)
-      // return
-      // wx.showToast({
-      //   title: '您的评分' + (newdata.spec.evl_scores.total_score).toString() + '分',
-      //   icon: 'success',
-      //   duration: 5000,
-      //   success: function () {
-      //     wx.navigateTo({
-      //       url: '../../lib/followResult/followResult',
-      //     })
-      //     // me.socket.close()
-      //   }
-      // })
-
-
     }
-
-
-
-
   })
 }
 
-
-/**
- * 前往结果页 
- */
-function gotoResultpage () {
-
-
-
-
-}
 
 
 
