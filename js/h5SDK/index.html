@@ -71,7 +71,7 @@
 				process.state = 4
 				console.log(result)
 				result = JSON.stringify(result)
-				$("#result").html($("#result").text()+'<br/>'+result);
+				$("#result").html($("#result").text()+'<br/>'+result+'<br/>');
 			},
 			// 处理错误
 			error : function (err) {
@@ -121,12 +121,14 @@
 
 			// 英文
 			// params.webscoketURL="ws://192.168.34.145:18092/v1/api/speech/evl/en?app_key=8102b22a5e81e840176d9f381ec6f837"
-			// params.ise_word="how are you";
+			// params.ise_word="how are you";  // how are you | what do you say
 			// params.pid="1103101";
-
+			//单句测评与多句测评模式选项，多句测评模式置为1 单句测评为0
+			
+			params.multi_sent_loop = '0'
 			// 中文
 			params.webscoketURL="ws://192.168.34.145:18092/v1/api/speech/evl/zh?app_key=8102b22a5e81e840176d9f381ec6f837";
-			params.ise_word="好雨知时节，当春乃发生。随风潜入夜，润物细无声。";
+			params.ise_word="好雨知时节,润物细无声。"; // "好雨知时节 | 润物细无声。"
 			params.pid="1103103";
 
 			params.mergeNum=1;
