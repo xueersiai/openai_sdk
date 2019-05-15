@@ -1,8 +1,6 @@
 
 let encoding = require("../encoding.js");
 
-
-
 const formatTime = date => {
   const year = date.getFullYear()
   const month = date.getMonth() + 1
