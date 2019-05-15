@@ -4,7 +4,9 @@
  * wx: Skx1234567890
  * 注：请使用小程序开发真机调试  
  * 小程序开发版本： v1.02.1904090
+ * QQ 544254435 
  * 
+ *  
  */
 
 // 引入外部资源  包含wxparse 以及 bufferTostr  
@@ -260,7 +262,7 @@ function playRecording(event) {
    * by 石可心
    * 错误处理缺少
    */
-  let datasrc = getApp().globalData.recordTexts[0] // 欠缺改进
+  let datasrc = getApp().globalData.cpluyinurl // 欠缺改进
   console.log(datasrc)
   var innerAudioContext = wx.createInnerAudioContext();
   // src 播放地址
