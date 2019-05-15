@@ -156,7 +156,7 @@ function testGoEn(accessModeData) {
     return
   }
   let geturl = showurl(accessModeData)
-  let socketurl = 'ws://192.168.34.145:18092/v1/api/speech/evl/en' + geturl; //  测试 测试 
+  let socketurl = 'ws://openapiai.xueersi.com/v1/api/speech/evl/en' + geturl; //  测试 测试 
   // 链接当前socket 
   linkSocket(socketurl)
 }
@@ -177,7 +177,7 @@ function testGoZh(accessModeData) {
   }
   let geturl = showurl(accessModeData)
   console.log('中文测评');
-  let socketurl = 'ws://192.168.34.145:18092/v1/api/speech/evl/zh' + geturl;  // 新包
+  let socketurl = 'ws://openapiai.xueersi.com/v1/api/speech/evl/zh' + geturl;  // 新包
   // 链接当前socket 
   linkSocket(socketurl)
 }
