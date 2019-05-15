@@ -318,7 +318,7 @@ var XueASR = (function (window, navigator) {
             		return;
             	}
 			}
-
+			console.log('传进来的文案',  asrParam.text)
             // 当前合并包数比规定小 ,合包
             if (mergeIndex < asrParam.mergeNum) {
 				console.log('1111111111')
@@ -705,11 +705,10 @@ var XueASR = (function (window, navigator) {
 			if(asrParam.multi_sent_loop === '0'){
 				if(result.data.spec.evl_flag === "fnl") { // 结束
 					wrapArray.push(result.data)
-					console.log('===============', wrapArray)
 					if(wrapArray.length>0){
 						callback.onResult(wrapArray)
 					} else {
-						callback.onResult(`${asrParam.text}。您没有答对~ 请再接再厉`)
+						callback.onResult(`请按提示语朗读哦~~`)
 					}
 					
 				}
@@ -723,7 +722,7 @@ var XueASR = (function (window, navigator) {
 					if(wrapArray.length>0){
 						callback.onResult(wrapArray)
 					} else {
-						callback.onResult(`${asrParam.text}。您没有答对~ 请再接再厉`)
+						callback.onResult(`请按提示语朗读哦~~`)
 					}
 				}
 			}
