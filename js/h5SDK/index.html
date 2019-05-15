@@ -19,7 +19,7 @@
 		</div>
 		<div>
 			错误：
-			<span id="error"></span>
+			<span id="error" style="color:red;"></span>
 		</div>
 		<div>
 			原音
@@ -34,13 +34,14 @@
 	<script type="text/javascript" src="js/ise.js"></script>
 	<script type="text/javascript">
 		
+		// 用来切换中英文 en是英文 zh是中文
+		var changeShape = 'en'
 		// string类型
 		var testid="1"
 		// string类型
 	    var liveid="2"
 	    var stuid=3
 
-		var changeShape = 'zh'
 		/**
 		 * 录音状态
 		 * 0:初始化 1：点击开始 2：录音中 3：点击停止 4：返回正常结果 5：返回错误
@@ -82,7 +83,7 @@
 			// 处理错误
 			error : function (err) {
 				process.state = 5
-				console.log(err)
+				console.log('err', err)
 				$("#error").html(err);
 			},
 			// 音量太小提示
@@ -118,6 +119,7 @@
 				}
 			}
 		});
+
 		if(changeShape === 'en') {
 			$('#textHtml').html('Whatever is worth doing is worth doing well.')
 			$('#audioOrigin').attr('src', './en.mp3')
@@ -132,8 +134,6 @@
 			if (process.state == 1) return;
 			process.state = 1
 			var params = {}
-
-			console.log($('#textHtml').text())
 			if(changeShape === 'en') {
 				// 英文
 				params.webscoketURL="ws://openapiai.xueersi.com/v1/api/speech/evl/en?app_key=8102b22a5e81e840176d9f381ec6f837"
@@ -144,16 +144,9 @@
 				params.pid="1103103";
 			}
 			params.ise_word=$('#textHtml').text(); 
-			
 			//单句测评与多句测评模式选项，多句测评模式置为1 单句测评为0
-			
 			params.multi_sent_loop = '0'
-			
-
 			params.mergeNum=1;
-			params.resendURL='http://asr.xueersi.com/post';
-			params.resend=true;
-			params.resendInterval=5000;
 			params.testid = testid
 			params.liveid = liveid
 			params.stuid = stuid

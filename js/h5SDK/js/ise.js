@@ -476,74 +476,6 @@ var XueASR = (function (window, navigator) {
 				repeatId = setTimeout(checkrepeat, asrParam.resendInterval);	
 			}
 		}
-		// 重发
-		var resend = function () {
-			repeat = true;
-			fileState = ['true'];
-			sid = getSID();
-        	// 数据包
-        	strblob = new Blob([sendstr]);
-        	// 将fileList中存储的分包数据合成一包发送
-			var Audioblob = fileList[0];
-        	// console.log(fileList.length);
-        	for (var i = 1; i < fileList.length; i++) {
-        		Audioblob = utils.arrayBufferToBase64(Audioblob)
-        	}
-        	sendstr = JSON.stringify({
-				"common": {
-					"sid": sid,
-					"idx":"-1",
-					"compress": "2"
-				},
-				"spec": {
-					"assess_ref": asrParam.text,
-					"vad_max_sec": "15",
-					"vad_pause_sec": "3",
-					"vad_st_sil_sec": "5",
-					"sil_tips_sec": "200",
-					"voiceless_penal": "1",
-					"multi_sent_loop": "0",
-					"need_out_wd_sec": "0",
-					"extra":{
-						"testid":asrParam.testid,
-						"liveid":asrParam.liveid
-					}
-				},
-				"audio": Audioblob
-			})
-        	// console.log(sendFile);
-        	resendSuccess = false;
-	        $.ajax({
-	            url:asrParam.resendURL,
-	            data:sendFile,
-	            async: false,
-	            timeout : 100000,
-	            processData:false,
-	            contentType: false, 
-	            type:"POST",
-	            success:function(res){
-	            	// 发送成功是将重发标志位置为true
-	            	resendSuccess = true;
-	                console.log(res);
-		            var result = JSON.parse(res);
-			    	analysisResult(result);
-	            },
-	            error:function(XMLHttpRequest, textStatus, errorThrown){
-	                console.log(textStatus);
-	                console.log(errorThrown);
-	                callback.onError(17);
-	            }
-	        })
-			// 当重发8s后，没有结果，这提示重录
-			resendId = setTimeout(function(){
-				if (resendSuccess) {
-					clearTimeout(resendId);
-				} else {
-					sid='';
-					callback.onError(17);
-				}
-			},8000)
-		}
 		// 检查是否重发
 		var checkrepeat = function () {
 			// 302不重发
@@ -567,7 +499,7 @@ var XueASR = (function (window, navigator) {
 			//重发
 			if (success == false || receiveMes == false) {
 				console.log('repeat');
-				resend();
+				// resend();
 			}else{
 				success = true;
 			}
@@ -676,10 +608,10 @@ var XueASR = (function (window, navigator) {
 		var analysisResult = function (result) {
 			console.log('analysisResult', result);
 			// 处理出错
-	    	if(result.errorCode){
+	    	if(result.code !== 0 && (result.data == null || result.data == 'undefined')){
 	    		// console.log(result.errorCode);
 	    		iseEvent.stop();
-				checkStatus(result.errorCode);
+				checkStatus(result.code, result.msg);
 				return;		    		
 	    	}else{
 	    		// 判断当前返回结果与发出sid是否相同。
@@ -730,15 +662,19 @@ var XueASR = (function (window, navigator) {
 		}
 		// 检查返回结果状态码
 		// 当出错时，返回对应错误码
-		var checkStatus = function (status) { 
+		var checkStatus = function (status, msg) { 
 			// 错误码：
-			// -1100：无法接收http请求，或者接收请求不符合协议
-			// -1101：参数错误
-			// -1102：数据为空 
-			// -1200：超时 网络原因或请求人数太多
-			// -1201：该请求对应的sid已提前结束 
-			// -1210：解码器忙 
-			// -1301：评测文本解析失败  评测文本格式有问题
+			// 16014  socket接收失败
+			//16105	没有sid或者idx，或者在需要assess_ref的业务中没有传
+			//16106	音频数据为空
+			//16015	拉学生名单错误
+			// 16016	解码器返回超时，比如端长时间占用连接
+			//16017	Sid提前结束
+			//16018	解码器目前繁忙
+			//16107	音频格式错误
+			//16108	评测文本格式错误，如出现了违规字符
+			//16019	解码器返回数据无有效声音
+			//16020	pcm错误			
 			// 0：成功
 			if (status == 0) return;
 
@@ -746,14 +682,13 @@ var XueASR = (function (window, navigator) {
 			// 停止录音
 			iseEvent.stop();
 			// 错误回调
-			callback.onError(status);		
+			callback.onError(msg);		
 		}
 		return {
 			"start":start,
 			"stop":stop,
 			"pause":pause,
 			"complete":complete,
-			"resend":resend,
 			"getMp3Blob": getMp3Blob,
 			"initMedia": initMedia,
 			"analysisResult": analysisResult,
@@ -798,14 +733,9 @@ var XueASR = (function (window, navigator) {
 		var getMp3Blob = function () {
 			return recorderMethod.getMp3Blob();
 		}
-		// 重发
-		var resend = function () {
-			return recorderMethod.resend();
-		}
         return {
             "start": start,
             "stop": stop,
-            "resend": resend,
             "getMp3Blob": getMp3Blob
         };
     })();
@@ -885,9 +815,6 @@ var XueASR = (function (window, navigator) {
             asrParam.webscoketURL = params_obj.webscoketURL || 'wss://asr.xueersi.com/wsh5'
             asrParam.pid = params_obj.pid || '1103101';
             asrParam.mergeNum = params_obj.mergeNum || 4;
-            asrParam.resendURL = params_obj.resendURL || 'http://asr.xueersi.com/post';
-            asrParam.resend = params_obj.resend || false
-            asrParam.resendInterval = params_obj.resendInterval || 5000
             asrParam.testid = params_obj.testid || "1";
             asrParam.liveid = params_obj.liveid || "1";
 			asrParam.stuid = params_obj.stuid || 1;
@@ -958,10 +885,5 @@ var XueASR = (function (window, navigator) {
         this.stop = function () {
             iseEvent.stop();
         };
-
-       	// 重发
-        this.resend=function(){
-        	iseEvent.resend();
-        }
     }
 })(window, navigator);
