@@ -22,8 +22,6 @@ var XueASR = (function (window, navigator) {
 		"text" : "",
 		// pid
 		"pid" : "",
-		// 合包数
-		"mergeNum" : 0 ,
 		// 重发地址
 		"resendURL" : "",
 		// 试题id
@@ -32,10 +30,6 @@ var XueASR = (function (window, navigator) {
 		"liveid" : "0",
 		// 学生id
 		"stuid" : "0",
-		// 音频开始时间
-		"startTime" : '',
-		// 音频结束时间
-		"endTime" : '',
 		// 音频持续时间
 		"audioTime" : '',
 		// 用户浏览器信息，测评一般只支持谷歌/火狐浏览器
@@ -127,6 +121,7 @@ var XueASR = (function (window, navigator) {
 			}
 			return arrA
 		}
+
 	    // 接收到编码完的MP3数据
    	    encodeMp3worker.onmessage = function (e) {
 	      switch (e.data.cmd) {
@@ -135,6 +130,7 @@ var XueASR = (function (window, navigator) {
 				recorderMethod.lastBUffer(e.data.buf)
 				console.log('e.data.buf', e.data.buf)
 				var dataStr = e.data.buf
+
 				var koko = flatten(dataStr)
 				recorderMethod.complete(koko);
 	          	break;
@@ -234,8 +230,6 @@ var XueASR = (function (window, navigator) {
 		var	finish = false;
 		// 当前sid是否已经发了负包，如果已发送，则不再发包
 		var	finishSid = "";
-		// 当前合包数
-		var	mergeIndex = 1;
 		// 当前合包的音频数据
 		var	mergeData = '';
 		// 暂存当web socket没连上的时候的音频数据
@@ -292,17 +286,6 @@ var XueASR = (function (window, navigator) {
             		return ;
             	}
 			}
-
-			// 记录开始时间
-            if (parseInt(idx) == 1) {
-            	asrParam.startTime = new Date().getTime();
-            }
-
-            // 记录结束时间
-            if (parseInt(idx) < 0) {
-            	asrParam.endTime = new Date().getTime();
-            }
-
            	// 当lastblob为true，将idx置为-
             if (lastBlob) {
             	console.log("停止录制音频");
@@ -319,112 +302,48 @@ var XueASR = (function (window, navigator) {
             	}
 			}
 			console.log('传进来的文案',  asrParam.text)
-            // 当前合并包数比规定小 ,合包
-            if (mergeIndex < asrParam.mergeNum) {
-				console.log('1111111111')
-            	if (lastBlob) {
-            		lastBlob = false;
-					bufferToString = utils.arrayBufferToBase64(data)
-					sendstr = {
-						"common": {
-							"sid": sid,
-							"idx": idx,
-							"compress": "2"
-						},
-						"spec": {
-							"assess_ref": asrParam.text,
-							"vad_max_sec": "15",
+            // 已合够规定包数，进行发包
+			bufferToString = utils.arrayBufferToBase64(data)
+			sendstr = {
+				"common": {
+					"sid": sid,
+					"idx": idx,
+					"compress": "2"
+				},
+				"spec": {
+					"assess_ref": asrParam.text,
+					"vad_max_sec": "15",
 
-							"vad_pause_sec": "3",
-					
-							"vad_st_sil_sec": "5",
-					
-							"sil_tips_sec": "200",
-					
-							"voiceless_penal": "1",
-					
-							"multi_sent_loop": asrParam.multi_sent_loop,
-					
-							"need_out_wd_sec": "0",
-							"extra":{
-								"testid":asrParam.testid,
-								"liveid":asrParam.liveid
-							}
-						},
-						"audio": bufferToString
+					"vad_pause_sec": "3",
+			
+					"vad_st_sil_sec": "5",
+			
+					"sil_tips_sec": "200",
+			
+					"voiceless_penal": "1",
+			
+					"multi_sent_loop": asrParam.multi_sent_loop,
+			
+					"need_out_wd_sec": "0",
+					"extra":{
+						"testid":asrParam.testid,
+						"liveid":asrParam.liveid
 					}
-					console.log('bufferToString---', bufferToString)
-					sendFile = JSON.stringify(sendstr)
-
-
-
-		            mergeIndex = 1;
-
-		            fileList.push(data);
-		            // console.log(fileList);
-		            fileState.push('false');
-
-		            if(parseInt(idx) <= 0){
-		            	idx = "1";
-		            	// console.log('idx被重置');
-		            	finish = true;
-		            	finishSid = sid;
-		            	// console.log(finish);
-		            	// console.log(finishSid);
-		            }else{
-			            idx = (Number(idx)+1).toString();
-					}
-		            sendRecord();
-            	}else{
-            		// recorderFile = new Blob(data, { "type":"audio/mp3" });
-            		// mergeData=new Blob([mergeData,recorderFile]);
-            		mergeIndex++;
-            	}
-            }else{
-            	// 已合够规定包数，进行发包
-            	mergeIndex = 1;
-				bufferToString = utils.arrayBufferToBase64(data)
-				sendstr = {
-					"common": {
-						"sid": sid,
-						"idx": idx,
-						"compress": "2"
-					},
-					"spec": {
-						"assess_ref": asrParam.text,
-						"vad_max_sec": "15",
-
-						"vad_pause_sec": "3",
-				
-						"vad_st_sil_sec": "5",
-				
-						"sil_tips_sec": "200",
-				
-						"voiceless_penal": "1",
-				
-						"multi_sent_loop": asrParam.multi_sent_loop,
-				
-						"need_out_wd_sec": "0",
-						"extra":{
-							"testid":asrParam.testid,
-							"liveid":asrParam.liveid
-						}
-					},
-					"audio": bufferToString
-				}
-				sendFile = JSON.stringify(sendstr)
-	            fileList.push(data);
-	            data = '';
-	            fileState.push('false');
-	            if (parseInt(idx) <= 0) {
-	            	idx = "1";
-	            	finish = true;
-	            	finishSid = sid;
-	            }else{
-		            idx = (Number(idx)+1).toString();
-	            }  
-	            sendRecord();
+				},
+				"audio": bufferToString
 			}
+			sendFile = JSON.stringify(sendstr)
+			fileList.push(data);
+			data = '';
+			fileState.push('false');
+			if (parseInt(idx) <= 0) {
+				idx = "1";
+				finish = true;
+				finishSid = sid;
+			}else{
+				idx = (Number(idx)+1).toString();
+			}  
+			sendRecord();
 			
 		}
 		// 开始录音
@@ -457,8 +376,6 @@ var XueASR = (function (window, navigator) {
 			sendLastMes = false;
 			firstClick = false;
 			finish = false;
-			asrParam.startTime = 0;
-			asrParam.endTime = 0;
 			asrParam.audioTime = 0;
 		}
 		// 停止录音方法
@@ -814,7 +731,6 @@ var XueASR = (function (window, navigator) {
             asrParam.text = params_obj.ise_word.replace(/\n+/g,' ');
             asrParam.webscoketURL = params_obj.webscoketURL || 'wss://asr.xueersi.com/wsh5'
             asrParam.pid = params_obj.pid || '1103101';
-            asrParam.mergeNum = params_obj.mergeNum || 4;
             asrParam.testid = params_obj.testid || "1";
             asrParam.liveid = params_obj.liveid || "1";
 			asrParam.stuid = params_obj.stuid || 1;
