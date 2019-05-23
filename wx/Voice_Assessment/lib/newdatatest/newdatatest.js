@@ -1,33 +1,12 @@
 /**
  * 语音封装包裹第一版，   名称：二把刀
- * 
  * by：石可心
+ * wx: Skx1234567890
+ * 注：请使用小程序开发真机调试  
+ * 小程序开发版本： v1.02.1904090
+ * QQ 544254435 
  * 
- * 欠缺： 引用方法自检 ！  报错回调
- * 
- * 等待调通数据等俊玺老师或者杨挺老师来打通数据
- * 
- * 
- * 理想状态 
- * 1，所有update 数据提取一个共有方法    
- * 2，所有的错误处理提取一个错误方法  错误处理 init已经进行补充
- * 
- * 
- * 
- * 第一步：封装方法
- * 第二步：拆分 拆分出一个方法 一个方法
- * 第三部：整理总结问题  
- * 
- * 明天需要看结果展示页面---》 展示结果为何是树形排开的 还有下面的关键词语是否有跟读  
- * 
- * 需要问产品是否有单个文字包以及单词包 
- * 词典过大，查看是否可以降低在500kb 
- * 
- * 
- * showdata 整理字段。 初步SDK已经完成
- * 查看是否可以继续深度去抽离一下 
- * 
- * 
+ *  
  */
 
 // 引入外部资源  包含wxparse 以及 bufferTostr  
@@ -35,10 +14,8 @@ let util = require('../utils/util.js')
 let util1 = require('../demo.js')
 let errorflag = '5' // 测试初始化是否有问题
 let initErrorTitle = '' // 参数错误信息
-let showsocketurl ='' //展示socketurl
 let errorTotal = true;  // 录音错误处理
 let showEvaluationtype = '' // 多句测评还是单句测评
-let datasEvaluation = [] //存放测评结果
 
 
 /**
@@ -72,10 +49,12 @@ let showdata = {
   initAiData : {} // 存放操作底层AI数据
 }
 
+
+
 /**
  * by 石可心
  * 参数0 当前this 对象
- * 参数1 1代表英文测评 2 代表中文测评 3 代表英文识别 4 中文识别
+ * 参数1 1代表英文测评 2 代表中文测  ceping
  * 参数2 初始化集合  initData
  * 参数3 socket链接集合  accessModeData
  */
@@ -88,15 +67,11 @@ function showtest(event, initData, accessModeData, showinitAidata) {
   //  更新传递参数文本话术
   // 缺少当前文本播放音频
   let postdata = event.data.postList;
-
-  if (initData.ceping === '1' || initData.ceping === '2') {
-    showEvaluationtype = showinitAidata.multi_sent_loop
-    postdata.showassess_ref = initData.cpinfo;
-    postdata.originUrl = initData.cpluyinurl;
-  } else if (initData.ceping === '3' || initData.ceping === '4'){
-    postdata.pagetitle = '语音测评'
-  }
-  
+  showEvaluationtype = showinitAidata.multi_sent_loop
+  console.log('测评结果是', showEvaluationtype)
+  postdata.showassess_ref = initData.cpinfo;
+  postdata.originUrl = initData.cpluyinurl;
+  getApp().globalData.cpluyinurl = initData.cpluyinurl;
   postdata.initAiData = showinitAidata;
   event.setData({
     postList: postdata
@@ -113,20 +88,12 @@ function showtest(event, initData, accessModeData, showinitAidata) {
    * 
    * 
    */
-  
   switch (initData.ceping) {
-    case '1':
+    case 1:
       testGoEn(accessModeData);
       break;
-    case '2':
+    case 2:
       testGoZh(accessModeData);
-      break;
-    case '3':
-      console.log('initData.ceping', initData.ceping)
-      testGoShiBie(accessModeData, '3');
-      break;
-    case '4':
-      testGoShiBie(accessModeData, '4');
       break;
   }
 }
@@ -189,7 +156,7 @@ function testGoEn(accessModeData) {
     return
   }
   let geturl = showurl(accessModeData)
-  let socketurl = 'ws://192.168.34.145:18092/v1/api/speech/evl/en' + geturl; //  测试 测试 
+  let socketurl = 'ws://openapiai.xueersi.com/v1/api/speech/evl/en' + geturl; //  测试 测试 
   // 链接当前socket 
   linkSocket(socketurl)
 }
@@ -210,34 +177,7 @@ function testGoZh(accessModeData) {
   }
   let geturl = showurl(accessModeData)
   console.log('中文测评');
-  let socketurl = 'ws://192.168.34.145:18092/v1/api/speech/evl/zh' + geturl;  // 新包
-  // 链接当前socket 
-  linkSocket(socketurl)
-}
-/**
- * by mujin
- * 识别
- * 
- */
-function testGoShiBie(accessModeData, tag) {
-  console.log('accessModeData', accessModeData)
-  initErrorTitle = '';
-  console.log('accessModeData', accessModeData)
-  let selectindexmode = accessModeData.access_mode
-  if (selectindexmode !== 1 && selectindexmode !== 2) {
-    initErrorTitle = '请输入正确的接入方式 access_mode = 1 or 2'
-    showError(initErrorTitle)
-    errorTotal = false;
-    return
-  }
-  let geturl = showurl(accessModeData)
-  let socketurl
-  if (tag === '3'){
-    socketurl = 'ws://192.168.34.145:18092/v1/api/speech/asr/zh' + geturl
-  } else if(tag === '4') {
-    socketurl = 'ws://192.168.34.145:18092/v1/api/speech/asr/en' + geturl
-  }
-  console.log('socketurl-----', socketurl)
+  let socketurl = 'ws://openapiai.xueersi.com/v1/api/speech/evl/zh' + geturl;  // 新包
   // 链接当前socket 
   linkSocket(socketurl)
 }
@@ -281,7 +221,6 @@ function showurl(accessModeData) {
  * 
  */
 function linkSocket(socketurl) {
-  showsocketurl = socketurl;
   console.log('socket链接地址', socketurl)
   let requestsocket = wx.connectSocket({
     url: socketurl,
@@ -304,7 +243,7 @@ function linkSocket(socketurl) {
 /**
  * by 石可心
  * 播放录音
- *
+ * 
  */
 function playRecording(event) {
   console.log(event)
@@ -323,7 +262,7 @@ function playRecording(event) {
    * by 石可心
    * 错误处理缺少
    */
-  let datasrc = getApp().globalData.recordTexts[0] // 欠缺改进
+  let datasrc = getApp().globalData.cpluyinurl // 欠缺改进
   console.log(datasrc)
   var innerAudioContext = wx.createInnerAudioContext();
   // src 播放地址
@@ -397,7 +336,6 @@ function clickRecording(event) {
   // 为了测试生成6位随机状态码
   
   var randomNum = util.randomNum1()
-  
   // 点击每次重置一次 分片语音发包从0开始进行发送 复制给准备递增的数字
   let newidx = newdata.showidx;
   // 唤起录音功能
@@ -427,16 +365,16 @@ function clickRecording(event) {
   })
 
   console.log('newdata', newdata)
-  
   // ！！! 录音重点分片式录音发送，根据分片每一片的大小来进行反复调用，直到设定事件结束或者手动结束
   recorderManager.onFrameRecorded((res) => {
-    console.log('石可心返回音频', res)
+    console.log('石可心返回音频',res)
     const {
       frameBuffer
     } = res;
     // //  获取分片数据
     let newbyteLength = new Uint8Array(res.frameBuffer)
     let newbyteLength1 = []
+    console.log('newbyteLength',newbyteLength)
     if (systemtype == "devtools") {
       newbyteLength1 = newbyteLength
     } else if (systemtype == "ios") {
@@ -444,13 +382,14 @@ function clickRecording(event) {
     } else if (systemtype == "android") {
       newbyteLength1 = newbyteLength.slice(4, newbyteLength.length - 3)
     }
-    console.log(newbyteLength1)
+    // newbyteLength1 = newbyteLength
+    console.log('newbyteLength1',newbyteLength1)
     let newnewbyteLength1 = wx.arrayBufferToBase64(newbyteLength1)
     // 正常发包idx 数字累加 最后一包为负值
     newidx = res.isLastFrame ? '-' + (parseInt(newidx) + 1).toString() : (parseInt(newidx) + 1).toString()
     console.log('shikexin-idx', newidx)
-    let sendstr = util.getDataList1(randomNum, newdata.showassess_ref, newidx, newnewbyteLength1, newdata.initAiData);
-    console.log('封装会来的数据数据包', sendstr);
+    let sendstr = util.getDataList(randomNum, newdata.showassess_ref, newidx, newnewbyteLength1, newdata.initAiData);
+    // console.log('封装会来的数据数据包', sendstr);
     //拼装数据进行传输
     pushSoecket(sendstr);
     //socket 回调
@@ -557,38 +496,11 @@ function websocketCallBack() {
             // me.socket.close()
           }
         })
-
-
       }
-
-      // closeRecording()
-      // // 得分遮罩
-      // console.log('getApp().globalData.testResult', getApp().globalData.testResult)
-      // return
-      // wx.showToast({
-      //   title: '您的评分' + (newdata.spec.evl_scores.total_score).toString() + '分',
-      //   icon: 'success',
-      //   duration: 5000,
-      //   success: function () {
-      //     wx.navigateTo({
-      //       url: '../../lib/followResult/followResult',
-      //     })
-      //     // me.socket.close()
-      //   }
-      // })
-
     }
-
   })
 }
 
-
-/**
- * 前往结果页 
- */
-function gotoResultpage () {
-
-}
 
 
 
