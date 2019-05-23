@@ -34,9 +34,9 @@ App({
     })
   },
   globalData: {
-    userInfo: null, // 每句录音 、
-    testResult: [], // 返回结果
-    myRecording: '',
-    cpluyinurl:'' //原音地址
+    userInfo: null,
+    recordTexts: ['http://111.206.170.217:12001/waiyanshe/record/one/oneSen.m4a'],
+    testResult: [],
+    myRecording: ''
   }
 })

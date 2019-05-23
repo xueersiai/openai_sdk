@@ -1,8 +1,10 @@
 {
   "pages": [
+
     "pages/newpage/newpage",
     "pages/index/index",
     "pages/logs/logs",
+    "pages/test/test",
     "lib/followResult/followResult"
   ],
   "window": {

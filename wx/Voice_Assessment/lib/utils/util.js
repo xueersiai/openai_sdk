@@ -1,6 +1,8 @@
 
 let encoding = require("../encoding.js");
 
+
+
 const formatTime = date => {
   const year = date.getFullYear()
   const month = date.getMonth() + 1
@@ -33,6 +35,22 @@ function showtest() {
   return uint8array
 }
 
+// 获取sid
+// var randomNum = ('000000' + Math.floor(Math.random() * 999999)).slice(-6);
+function randomNum1() {
+  var s = [];
+  var hexDigits = "0123456789abcdef";
+  for (var i = 0; i < 36; i++) {
+    s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+  }
+  s[14] = "4";  // bits 12-15 of the time_hi_and_version field to 0010
+  s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1);  // bits 6-7 of the clock_seq_hi_and_reserved to 01
+  s[8] = s[13] = s[18] = s[23] = "-";
+  var uuid = s.join("");
+  var Timestamp = new Date().getTime();
+  uuid = uuid + "_" + 0 + '_' + Timestamp;
+  return uuid;
+}
 /**
  *  将字符串转化为buffer
  * 
@@ -85,7 +103,7 @@ function getDataList(randomNum, assess_ref, idx, newbyteLength1, aidata) {
   let title = 'ai-test' + randomNum
   let sendstr = JSON.stringify({
     "common": {
-      "sid": 'SKX-test' + randomNum,  // sid，全局唯一
+      "sid": randomNum,  // sid，全局唯一
       "idx": idx,                                      //分段音频的次序 
       "compress": "2"
     },
@@ -103,10 +121,32 @@ function getDataList(randomNum, assess_ref, idx, newbyteLength1, aidata) {
     "audio": newbyteLength1                             //音频字节流,需要转为二进制流
   })
 
-
   return sendstr
 }
 
+
+function getDataList1(randomNum, assess_ref, idx, newbyteLength1, aidata) {
+  console.log('这里是拼装数据的', aidata)
+  let showdata = aidata
+  let title = 'ai-test' + randomNum
+  let sendstr = JSON.stringify({
+    "common": {
+      "sid": randomNum,  // sid，全局唯一
+      "idx": idx,                                      //分段音频的次序 
+      "compress": "2"
+    },
+    "spec": {
+      "vad_max_sec": showdata.vad_max_sec || "20",                    //默认30s, 说话最大时长 
+      "vad_pause_sec": showdata.vad_pause_sec || "3",                 //默认5s, 说话后静音停止时间 
+      "vad_st_sil_sec": showdata.vad_st_sil_sec || "8.0",               //默认为10s, 说话前最大静音时长 
+      "long_speech": showdata.long_speech || "",
+      "extra": {}                                     //扩展字段，可有可无，方便后续扩展
+    },
+    "audio": newbyteLength1                             //音频字节流,需要转为二进制流
+  })
+
+  return sendstr
+}
 
 function _arrayBufferToBase64(raw) {
   var base64 = '';
@@ -178,6 +218,8 @@ module.exports = {
   concatenate: concatenate,
   getDataList: getDataList,
   _arrayBufferToBase64: _arrayBufferToBase64,
-  joinParams: joinParams
+  joinParams: joinParams,
+  randomNum1: randomNum1,
+  getDataList1: getDataList1
 
 }
