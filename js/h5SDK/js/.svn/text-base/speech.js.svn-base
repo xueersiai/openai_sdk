@@ -1,0 +1,2048 @@
+
+/**
+ * Created by yangjingjing on 2017/2/10.
+ * Update by Marco on 2017/3/3
+ */
+
+var content=['It was Sunday. I never get up early on Sundays.',
+'Yesterday a beggar knocked at my door. ',
+' My coat and my umbrella please',
+'Are you a teacher?',
+'I used to travel by air a great deal when I was a boy.',
+'Those women are very hard-working.',
+'There is a television in the room.',
+' It is a fine day today.',
+'He asked me for a meal and a glass of beer.',
+'We are on the left.'
+];
+
+// var index=0+Math.round(Math.random()*9);
+
+
+var nextsentence_idx=1;
+
+$("#nextsentence").click(function(){
+
+	$("#read_sentence").text(content[nextsentence_idx]);
+	$(".speech_content").text(content[nextsentence_idx]);
+	if(nextsentence_idx>8){
+		nextsentence_idx=0;
+	}else{
+		nextsentence_idx++;
+	}
+
+})
+
+
+var xue = xue || {};
+
+var order=0;
+var stuid = $('.oral-test').data('stuid');
+var liveid = $('.oral-test').data('liveid');
+var testid = $('.oral-test').data('testid');
+var isplayback = $('.oral-test').data('isplayback');
+var answered=$('.oral-test').data('answered');
+
+if(answered && !isplayback){
+	$('#answered').show().fadeOut(3500);
+}
+
+var timeRecord=0;// 音频时间
+var audioUrl=''; // 音频URL
+var resendCount=1;// 重发次数
+var maxScore=new Array(); //最高分
+maxScore[0]=0;
+var modelHide='';
+var arrayBufferStr='';// 本地存储音频字符串
+var showScoreTimer='';
+// var player='';// 音频dom
+
+// 一些公共方法
+(function (x) {
+	x.ls ={
+		set : function (key, val) {
+			var v = JSON.stringify(val);
+			localStorage.setItem(key, v);
+		},
+		get : function (key) {
+			var val = localStorage.getItem(key);
+			return typeof val == 'number' ? val : JSON.parse(val);
+		},
+		del : function (key) {
+			if(key){
+				localStorage.removeItem(key);
+			}else {
+				localStorage.clear();
+			}
+		},
+		setItem     : function (key, val) {
+			localStorage.setItem(key,val);
+		},
+		getItem     : function (key) {
+			return localStorage.getItem(key);
+		},
+		removeItem  : function (key) {
+			localStorage.removeItem(key);
+		},
+		clear       : function () {
+			localStorage.clear();
+		}
+	};
+
+	// 仅清除本项目的LocalStorage
+	x.ls.rm = function () {
+		var keys = ['speech_liveid', 'speech_stuId', 'timeStampStart','timeStampNow', 'speech_totleScore','recorderFile', 'debug'];
+		for(var i = 0; i < keys.length; i++){
+			xue.ls.del(keys[i]);
+			console.log(keys[i] + '..... cleared');
+		}
+		return 'All cleared! ';
+	};
+
+
+	/**
+	 * debuger
+	 * @param txt
+	 */
+	x.debug = (function () {
+		var isDebug = false;
+		var txt = '';
+		var open = function () {
+			xue.ls.set('debug', true);
+			isDebug = true;
+			return 'Debug opening ...';
+		};
+		var close = function () {
+			isDebug = false;
+			xue.ls.set('debug', false);
+			return 'Debug closed!';
+		};
+
+		return {
+			'open' : open,
+			'close': close
+		};
+	})();
+
+	x.logs = function (txt, key) {
+		if(xue.ls.get('debug')){
+			var k = key || '';
+			console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=- ' + k + ' :');
+			console.log(txt);
+		}
+	};
+})(xue);
+
+function speechClientLog (str) {
+    var clientLogUrl=$('.oral-test').data('clientlog');
+    if(isplayback == 1){
+    	str = str + ', isplayback : true';
+	}else {
+        str = str + ', isplayback : false';
+    }
+    var data = {
+        type: '3',
+        groupid: liveid,
+        uname: '',
+        uid: '',
+        stuid: stuid,
+        tuid: '',
+        filename: '2', // 2，为正常流程日志，3为错误日志
+        str: str, // 日志内容
+        order: order++, // 日志上报顺序
+        time: (new Date()).getTime()
+    };
+    $.ajax({
+        type: 'get',
+        url: clientLogUrl,
+        data: data,
+        dataType: 'json',
+        success: function () {
+        },
+        complete: function () {
+        }
+    });
+}
+
+
+
+
+/**
+ * 公共提示层
+ * opt = {
+      img : '',
+      content : '',
+      submit : function(){}
+   }
+ * @param  {string} content 提示框内容
+ */
+var confirmPop = function(opt){
+	var padding = opt.padding ? 'padding:' + opt.padding + ';' : '';
+	var tpl = '<img src="'+ opt.img +'" style="float:left; width:185px; height:156px; margin: -10px 0 0 -10px;">' + '<h2 style="display:inline-block; width:200px;margin: 22px 0 0 20px; '+ padding +' color:#6f729a; font-size:16px; text-align: left;">' + opt.content + '</h2>';
+
+	xue.win({
+		id: 'wrong_submit',
+		title: false,
+		padding : '20px 20px 10px',
+		width : 480,
+		content : tpl,
+		close: false,
+		submitVal : '确定',
+		cancelVal : '取消',
+		submit: !opt.submit ? false : function () {
+			xue.win.close();
+			if(opt.submit instanceof Function){
+				opt.submit();
+			}
+		},
+		cancel : opt.cancel == 'undefined' ? 'true' : function () {
+			xue.win.close();
+			if(opt.cancel instanceof Function){
+				opt.cancel();
+			}
+		},
+		lock : true
+	});
+};
+
+
+
+
+
+
+
+
+
+/**
+ * ==================================
+ * 语音评测
+ * @param config
+ *
+ * @update 2017/03/07
+ * @author Marco
+ * ==================================
+ */
+
+// 检测重复点击时间的全局变量
+window.lastTime='';
+var Speech = function (config) {
+
+
+	/**
+	 * 评测所需dom节点
+	 * @type {{handle: (*), tips: (*), content: (*), result: (*), volume: (*), submit: (*), timer: (*)}}
+	 */
+	var dom = {
+
+		handle    : $('.speech_handle')         // 录音按钮区域
+
+		, tips      : $('.speech_tips')           // 提示信息
+
+		, content   : $('.speech_content')        // 评测内容
+
+		, result    : $('.speech_result')         // 评测结果
+
+		, volume    : $(".speech_volume")         // 音量元素
+
+		, submit    : $('.speech_submit')         // 提交按钮
+
+		, timer     : $('.speech_timer')          // 计时
+
+	};
+
+	/**
+	 * speech 公共属性
+	 * @type {{appId: string, appKey: string, lan: string, type: string, content: string, mic: boolean}}
+	 */
+	var attr = {
+
+		'appId'     : ''
+
+		, 'appKey'    : ''
+
+		, 'lan'       : 'en'                        // 评测语言：en / cn
+
+		, 'type'      : 'read_word'                 // 评测类型：read_word（单词） ／ read_sentence （句子）
+
+		, 'content'   : ''                          // 评测内容:
+
+		, 'mic'       : false                       // 麦克风状态：true / false
+
+		, 'src'       : 'img/'                      // 图片路径
+
+	};
+
+	// 根据传入的配置内容替换默认内容
+	$.extend(attr, config);
+	var _this = {
+		'dom' : dom,
+		'attr' : attr
+	};
+
+	/**
+	 * 进程
+	 * 状态：-1、错误，0、初始化，1、连接中，2、录音中，3、录音停止，4、录音结束，5、有返回值，6、音量太小，7、正在链接SDK中
+	 * @type {{state: number}}
+	 */
+	var process = {
+		'state' : 0,
+		'recorded' : false
+	};
+
+	/**
+	 * 方法
+	 * @type {{getContent: getContent, setContent: setContent, getConnectParams: getConnectParams}}
+	 */
+	var methods = {
+
+		/**
+		 * 获取评测内容
+		 * @param type
+		 * @returns {string}
+		 */
+		getContent : function (type) {
+			var tp = type || _this.attr.type;
+			var con = _this.attr.content;
+			con = $(".speech_content").text();
+			// if(tp == 'read_word') {
+			// 	con = '[word]' + con.replace(/\s+/g, '\n');
+			// }
+			return con;
+		},
+
+		/**
+		 * 设置评测内容
+		 */
+		setContent : function () {
+
+			// 用以存放录音评测内容及类型的DOM节点
+			var box = _this.dom.content;
+
+			// 获取DOM节点里的文档内容
+			var con = $.trim(box.html());
+
+			//匹配这些中文标点符号 。 ？ ！ ， 、 ； ： “ ” ‘ ' （ ） 《 》 〈 〉 【 】 『 』 「 」 ﹃ ﹄ 〔 〕 … — ～ ﹏ ￥
+			var reg = /[\u3002|\uff1f|\uff01|\uff0c|\u3001|\uff1b|\uff1a|\u201c|\u201d|\u2018|\u2019|\uff08|\uff09|\u300a|\u300b|\u3008|\u3009|\u3010|\u3011|\u300e|\u300f|\u300c|\u300d|\ufe43|\ufe44|\u3014|\u3015|\u2026|\u2014|\uff5e|\ufe4f|\uffe5]/g;
+			// 替换掉所有匹配到的中文符号
+			con = con.replace(reg, '');
+
+			// 替换中文引号
+			// con = con.replace('“', '"').replace('”','"');
+
+			// 获取对应DOM节点的data-type值
+			_this.attr.type = box.data('type');
+
+			// 替换内容中的换行符
+			_this.attr.content = con.replace(/<br>/ig, ' ');
+		},
+
+		/**
+		 * 获取connect参数
+		 * @returns {{ise_word: string, ise_category: string, params: string}}
+		 */
+		getConnectParams : function () {
+
+			var params = [
+				'appid=' + _this.attr.appId,
+				'appidkey=' + _this.attr.appKey,
+				'bom=true',
+				'rstcd=utf8',
+				'category=' + _this.attr.type,
+				'auf=audio/L16;rate=16000',
+				'ent=' + _this.attr.lan,
+				'aue=speex-wb;7'
+			];
+
+			return {
+				'ise_word' : methods.getContent(),
+				'ise_category' : _this.attr.type,
+				'params' : params.toString()
+			}
+		},
+
+		checkMicrophone : function (callback) {
+			navigator.getUserMedia ( {audio: true}, function(e){
+				return callback(e);
+			}, function (e) {		
+				if(e.name=="PermissionDeniedError"){
+					var errcode="1101";
+				}else if(e.name=="NotFoundError"){
+					var errcode="1102";
+				}else if(e.name=="SecurityError"){
+					var errcode="1104";
+				}else{
+					var errcode="";
+				}
+
+				console.log('111');
+				showPrompt('麦克风还不能用，快调试调试');
+				var logid=localStorage.getItem('logid');
+				var ajaxErrorData = {
+				    'newLogid': logid,
+				    'systemError':'error',
+				    'systemParams':'key=xeslog_speechEval_Microphone&error='+errcode+'&isplayback='+isplayback
+				};
+
+			// window.xesWeb_eventLog.xesEventLog('systemLog',ajaxErrorData);
+
+				// confirmPop({
+				// 	img : _this.attr.src+'noneGlod.png',
+				// 	content : '麦克风还不能用，快调试调试',
+				// 	submit : function () {
+				// 		return false;
+				// 	}
+				// })
+			});
+		},
+
+		checkNetwork : function (onlineCallback, offlineCallback) {
+			var xmlHttp = null;
+
+			function createXMLRequest( ){
+				var msxmlhttp = new Array(
+					'Msxml2.XMLHTTP.6.0',
+					'Msxml2.XMLHTTP.3.0',
+					'Msxml2.XMLHTTP',
+					'Microsoft.XMLHTTP');
+				for(var i = 0; i < msxmlhttp .length; i++) {
+					try {
+						if(xmlHttp  = new ActiveXObject(msxmlhttp[i] )) break;
+					} catch (e) {
+						xmlHttp  = null;
+					}
+				}
+
+				if(!xmlHttp && typeof XMLHttpRequest != "undefined"){
+					xmlHttp = new XMLHttpRequest();
+				}
+
+			}
+			createXMLRequest();
+			//状态调用函数
+			xmlHttp.onreadystatechange = function(){
+				if ( xmlHttp.readyState == 4 ){
+					if (xmlHttp.status == 200){
+						if(onlineCallback instanceof Function){
+							xue.logs('online..........!');
+							return onlineCallback();
+						}
+					}else{
+						// session.stop();
+						_this.on.stop();
+						_this.on.end();
+						console.log('请检查您的网络3');
+						showPrompt('好像没网了，快检查一下');
+					}
+
+				}
+			};
+			//发送请求
+			// _this.attr.src = './img/';
+			xmlHttp.open( "get", _this.attr.src + 'loading.gif?_t=' + new Date().getTime() ,true);
+			xmlHttp.send( null );
+
+		},
+
+		isOnline : function (onlineCallback) {
+
+
+
+			/**
+			 * 获取网络连接状态
+			 */
+			var getConnectState = function(){
+				return navigator.onLine ? 1 : 0;
+			};
+
+			var __callback = function () {
+				if(onlineCallback instanceof Function){
+					onlineCallback();
+				}else{
+
+					console.log('online.......!');
+				}
+				return;
+			};
+
+			var __offline = function () {
+				// session.stop();
+				_this.on.stop();
+				_this.on.end();
+				// console.log(session);
+				console.log('请检查您的网络4');
+				showPrompt('好像没网了，快检查一下');
+
+			};
+			/**
+			 * 开启速度监测
+			 * @private
+			 */
+			if(getConnectState() !== 1) {
+				__offline();
+				return false;
+			}
+			var img = document.getElementById("networkSpeedImage");
+			if (!!!img) {
+				img = document.createElement("IMG");
+				img.id = "networkSpeedImage";
+				img.style.display = "none";
+				document.body.appendChild(img);
+			}
+			try {
+				// _this.attr.src = './img/';
+				img.src = _this.attr.src + 'loading.gif?_t=' + new Date().getTime();
+				img.onload = function(){
+					// console.log('loading success!');
+					__callback()
+				};
+				img.onerror = function () {
+					console.log('loading error!');
+					__offline();
+				}
+			} catch(e){
+				__offline();
+			}
+
+
+		}
+
+	};
+
+	/**
+	 * 事件
+	 */
+	var compareArr=[];
+	var on = {
+
+		// 音量发生变化时
+		volume : function (value) {
+
+			handle.volume.setVal(value);
+			if(process.state === 7){
+				process.state = 0;
+			}
+		},
+
+		// 出现返回值时
+
+		// 8 : result.error
+		// 9 : websocket onerror
+		// 11 : 100s 用户未停止录音
+		// 12 : 10s内未说话
+		// 13 : -302 一直无声音录入
+		// 14 : -200,-301,等错误，提示录制失败
+		// 15 : 麦克风权限请求失败
+		// 16
+		// 17 : 重发3s后没取得结果提示重录
+
+		result : function (err, result) {
+
+			// 倒计时停止
+			timer.stop();
+			
+			_this.attr.mic = false;
+			var logid=localStorage.getItem('logid');
+
+			if(err != 15){
+				session.getMp3Blob(function (recorderBlob) {
+		        	$("#play_icon").removeClass().addClass('play_icon_on');
+					if(recorderBlob.size!=0 && recorderBlob.size!=undefined){
+						audioUrl = URL.createObjectURL(recorderBlob);
+	    				$("#play_icon").removeClass().addClass('play_icon_on');   
+		                if (typeof FileReader != 'undefined') {
+		                    var reader = new FileReader();
+		                    reader.onload = function (e) {
+		                        var arrayBuffer = e.target.result;
+		                        arrayBufferStr = arrayBufferToBase64(arrayBuffer);
+		                        // alert(arrayBufferStr);  
+		                        if (err == null || err == undefined || err == 0 || err == 11 || err == 12) {
+		                        	totle_score=JSON.parse(result)['final_score'];
+		                        	// totle_score=totle_score/2+50;
+					
+									if(totle_score>=maxScore[0]){
+										maxScore[0]=totle_score;
+										localStorage.setItem('recorderBlobStr', arrayBufferStr);
+									}
+		                        }
+		                    }
+		                    reader.readAsArrayBuffer(recorderBlob);
+		                }
+					}
+		        
+		        });
+			}
+
+
+			xue.logs('返回结果.......')
+			xue.logs(err, 'error');
+			xue.logs(JSON.parse(result), 'result');
+
+			var _result = _this.dom.result;
+
+			handle.tips.setContent('点击开始');
+			$("#prompt").hide();
+
+			// 若回调的err为空或错误码为0，则会话成功，可提取识别结果进行显示
+
+			// 12表示 有音频输入但5s内未说话，11 50s后用户未停止录音		
+			if (err == null || err == undefined || err == 0 || err == 11 || err == 12) {
+
+				handle.tips.setContent('点击开始');
+
+				// if(resendCount>2){
+				// 	handle.tips.setContent('点击开始');
+				// 	showPrompt('多次提交失败，请截图向辅导老师反馈问题');
+				// 	return;
+				// }else{
+				// 	showPrompt('提交失败，请重新提交');
+				// 	handle.tips.setContent('重新提交');
+				// 	return;
+				// }
+
+
+				var compare={};
+				// console.log(result);
+				if(typeof result == 'string'){
+
+					_result.text(result);
+					xue.logs(result, 'result.........');
+					//console.clear();
+					xue.logs(totle_score,'totle.....');
+
+					// totle_score.push(JSON.parse(result)['final_score']);
+
+					totle_score=JSON.parse(result)['final_score'];
+					// totle_score=totle_score/2+50;
+
+					if(totle_score>=maxScore[0]){
+						maxScore[0]=totle_score;
+					}
+
+					showModel(totle_score,'english');
+
+					xue.logs(totle_score, '每次作答时间');
+
+
+					localStorage.setItem('speech_totleScore',maxScore[0]);
+					
+					// localStorage.setItem('xue_totleScore',JSON.parse(result)['xue_score']);
+
+					compare=JSON.parse(result)['xue_score'];
+
+					showScore(maxScore[0]);
+					// compare.xunfei=JSON.parse(result)['totle_score'];
+					// console.log(compare);
+					// console.log(JSON.stringify(compare))
+
+					compareArr.push(JSON.stringify(compare));
+
+					localStorage.setItem('compareArr',compareArr);
+
+					// 100s后用户未停止录音
+
+            		// 有音频输入但5s内未说话
+					if(err==12){
+        				var str = 'JS speechEruptStop10 logData:' + testid;
+        				speechClientLog(str);
+						showPrompt('好久没声音了，自动测评啦');
+
+
+						showScoreTimer =setTimeout(function(){
+							$("#prompt").hide();
+							showScore(maxScore[0]);
+						},5000);
+						
+      //       			confirmPop({
+						// 	img : _this.attr.src+'anew.png',
+						// 	content : '无声音输入，停止录音，请重新录制或提交',
+						// 	submit : function () {
+						// 		// handle.button.click();
+						// 	}
+						// });
+					}
+
+					// 50s后用户未停止录音
+					if(err==11){
+						var str = 'JS speechEruptStop50 logData:' + testid;
+            			speechClientLog(str);
+            			$("#prompt").hide();
+						showScore(maxScore[0]);
+					}
+
+
+				}else {
+					if($('.oral-test').data('isplayback') != 1 && top != self){
+						// 记录日志
+						var filename = 2; //2是正常，3是错误
+						var str = 'speech logData:' + 'error code : ' + err + ",description : " + result;
+						window.parent.liveInfo.clientLog(filename, str);
+					}
+
+					_result.text('没有获取到评测结果');
+				}
+			}else{
+
+				console.log("错误码："+err+"结果："+result);
+				// handle.tips.setContent('点击开始');
+
+				if($('.oral-test').data('isplayback') != 1 && top != self){
+					// 记录日志
+					var filename = 2; //2是正常，3是错误
+					var str = 'speech logData:' + 'error code : ' + err + ", error description : " + result;
+					window.parent.liveInfo.clientLog(filename, str);
+				}
+
+				//若回调的err不为空且错误码不为0，则会话失败，可提取错误码
+				_result.text('error code : ' + err + ", error description : " + result);
+				var _totle = xue.ls.getItem('speech_totleScore');
+
+				// 不需要记录日志错误码
+				if(err==13||err == 17){
+
+					// 10s 无声音
+					if(err==13){
+						_this.on.stop();
+						_this.on.end();
+						var str = 'JS speechEruptStop10 logData:' + testid;
+	            		speechClientLog(str);
+	            		showPrompt('没声音呢，再来一次吧！');
+	            		handle.tips.setContent('点击开始');
+						// confirmPop({
+						// 	img : _this.attr.src+'anew.png',
+						// 	content : '无声音输入，停止录音，请重新录制',
+						// 	submit : function () {
+						// 		// handle.button.click();
+						// 	}
+						// });
+					}
+
+					if(err==17){
+						showPrompt('提交失败了，再读一次哦！');
+						handle.tips.setContent('点击开始');
+					}
+
+
+
+				}
+
+				// 需要记录日志错误码
+				if(err == 8 ||  err ==9 || err==14 || err == 15){
+
+					var ajaxErrorData = {
+			          'newLogid': logid,
+			          'systemError':'error',
+			          'systemParams':'key=xeslog_speechEval_live&error=' + result +'&isplayback='+isplayback
+			        };
+
+		   			// window.xesWeb_eventLog.xesEventLog('systemLog',ajaxErrorData);
+
+		   			if(err == 15){
+		   	// 			_this.on.stop();
+						// _this.on.end();
+						console.log('222');
+						showPrompt('麦克风还不能用，快调试调试');
+						// process.state = 7;
+						// handle.button.setStatus('connecting');
+						handle.tips.setContent('别急，正在准备中...');
+						$("#start-btn").attr('src', _this.attr.src + 'starting.png');
+						return;
+		   			}
+
+
+					if(err==8){
+						_this.on.stop();
+						_this.on.end();
+						handle.tips.setContent('重新提交');
+						var promptstr='提交失败，重新提交呦('+result+')';
+						showPrompt(promptstr);
+						if(resendCount>2){
+							handle.tips.setContent('点击开始');
+							showPrompt('多次提交失败，请截图向辅导老师反馈问题');
+						}else{
+							handle.tips.setContent('重新提交');
+						}
+					}
+
+					if(err==14){
+						handle.tips.setContent('重新提交');
+						var promptstr='提交失败，重新提交呦('+result+')';
+						showPrompt(promptstr);
+
+						if(resendCount>2){
+							handle.tips.setContent('点击开始');
+							showPrompt('多次提交失败，请截图向辅导老师反馈问题');
+						}else{
+							handle.tips.setContent('重新提交');
+						}
+					}
+
+					if(err==9){
+						_this.on.stop();
+						_this.on.end();
+						session.stop();
+						handle.tips.setContent('重新提交');
+						var promptstr='提交失败，重新提交呦('+result+')';
+						showPrompt(promptstr);
+
+						if(resendCount>2){
+							handle.tips.setContent('点击开始');
+							showPrompt('多次提交失败，请截图向辅导老师反馈问题');
+						}else{
+							handle.tips.setContent('重新提交');
+						}
+
+					}
+
+				}
+
+				// else{
+
+				// 	// 16表示没收到返回结果
+				// 	if(!_totle || _totle == null || _totle == 'undefined'){
+				// 		handle.tips.setContent('重新提交');
+				// 		showPrompt('提交失败，请重新提交');
+
+				// 		if(resendCount>2){
+				// 			handle.tips.setContent('点击开始');
+				// 			showPrompt('多次提交失败，请截图向辅导老师反馈问题');
+				// 		}else{
+				// 			handle.tips.setContent('重新提交');
+				// 		}
+
+
+				// 		// confirmPop({
+				// 		// 	img : _this.attr.src+'anew.png',
+				// 		// 	content : '录制失败，是否重新录制？',
+				// 		// 	submit : function () {
+				// 		// 		handle.button.click();
+				// 		// 	}
+				// 		// });
+				// 	}
+				// }
+			}
+
+
+
+
+			// 停麦
+			_this.attr.mic = false;
+
+			// 音量条停止
+			handle.volume.stop();
+
+			// if(xue.ls.getItem('speech_totleScore') != null) {
+			// 	handle.submit.enable();
+			// }else{
+			// 	handle.submit.disable();
+			// }
+
+
+			process.state = 5;
+			handle.button.setStatus('complete');
+
+			return;
+
+		},
+
+		// 开始录音
+		start : function () {
+			xue.logs('1. 开始录音........')
+			_this.attr.mic = true;
+
+			handle.tips.setContent('正在连接...');
+
+			handle.submit.disable();
+
+			// -------------- update 2017/03/12 by Marco
+			// 将原「录音中」状态下执行的方法放入「开始录音」状态中
+
+			handle.volume.start();
+			timer.start();
+
+			// -------------- end 2017/03/12
+
+
+			process.state = 1;
+			handle.button.setStatus('recording');
+
+		},
+
+		// 录音中
+		record : function () {
+			xue.logs('2. 录音中...')
+			handle.tips.setContent('录音中...');
+
+
+			xue.win.close();
+
+
+			process.state = 2;
+		},
+
+		// 停止录音
+		stop : function () {
+			xue.logs('3. 停止录音，开始处理结果......')
+			handle.tips.setContent('测评中，等一下哟...');
+
+            _this.attr.mic = false;
+            
+			timer.stop();
+
+			handle.volume.stop();
+
+			process.state = 3;
+			handle.button.setStatus('complete');
+
+		},
+
+		// 会话结束时
+		end : function () {
+			xue.logs('4. 会话结束....')
+			handle.tips.setContent('点击开始');
+
+
+			if(xue.ls.getItem('speech_totleScore') != null) {
+				handle.submit.enable();
+			}else{
+				handle.submit.disable();
+			}
+
+			process.state = 4;
+			handle.button.setStatus('complete');
+
+		},
+
+		// 音量太小时
+		low : function () {
+			xue.logs('5. 声音太小.....')
+			handle.tips.setContent('声音小了点，再来一次哦！');
+			process.state = 6;
+		},
+
+		// 出现错误时
+		error : function (result) {
+			xue.logs('error......')
+			console.log('error');
+			_this.attr.mic = false;
+			handle.tips.setContent('点击开始');
+			_this.attr.mic = false;
+
+			timer.stop();
+
+			handle.volume.stop();
+			// handle.submit.disable();
+
+			if(xue.ls.getItem('speech_totleScore') != null) {
+				handle.submit.enable();
+			}else{
+				handle.submit.disable();
+			}
+
+			process.state = -1;
+			handle.button.setStatus('complete');
+
+		}
+
+	};
+
+
+	// _this.on = on;
+
+	$.extend(_this, {
+		'state': process.state,
+		'on' : on,
+		// 连接服务器
+		connect : function (callback) {
+			
+			if(!navigator.onLine){
+				// session.stop();
+				_this.on.stop();
+				_this.on.end();
+				console.log('请检查您的网络2');
+				xue.logs('... offline ...', 'offline');
+
+				showPrompt('请检查您的网络！');
+
+				return;
+			}
+			var params = methods.getConnectParams();
+
+			console.log(params);
+			console.log(typeof(params));
+
+
+			// if(nextsentence_idx == ){
+			// 	=0;
+			// }else{
+			// 	nextsentence_idx++;
+			// }
+
+			// params.ise_word=content[nextsentence_idx];			
+			xue.logs(params, 'params .....');
+
+			session.start(params, function (e) {
+
+				if(e){
+					console.log(e);
+					if(e.name=="PermissionDeniedError"){
+						var errcode="-1101";
+					}else if(e.name=="NotFoundError"){
+						var errcode="-1102";
+					}else if(e.name=="SecurityError"){
+						var errcode="-1104";
+					}else{
+						var errcode="";
+					}
+					console.log('333');
+					showPrompt('麦克风还不能用，快调试调试');
+					var logid=localStorage.getItem('logid');
+					var ajaxErrorData = {
+					    'newLogid': logid,
+					    'systemError':'error',
+					    'systemParams':'key=xeslog_speechEval_Microphone&error='+errcode+'&isplayback='+isplayback
+					};
+
+					// window.xesWeb_eventLog.xesEventLog('systemLog',ajaxErrorData);
+					
+				}
+
+			});
+            //并发日志
+            var str = 'JS speechEruptStart logData:' + testid;
+            speechClientLog(str)
+
+			if(typeof callback === 'function'){
+				return callback();
+			}
+		},
+
+		// 断开
+		disconnect : function () {
+			session.kill();
+		},
+
+		// 取消
+		cancel : function () {
+			session.cancel();
+		},
+		// 重发数据
+		resend:function(){
+			console.log('resend');
+			session.resend();
+		},
+
+		// 停止
+		stop : function () {
+            //并发日志
+            var str = 'JS speechEruptStop logData:' + testid;
+            speechClientLog(str);
+			session.stop();
+		}
+	});
+
+
+	// $.extend(_this, config);
+
+
+
+	/**
+	 * 录音时间
+	 * @type {{start, stop, time}}
+	 */
+	var timer = (function(){
+		var i = 0;
+		var counting;
+
+		// 开始计时
+		var start = function () {
+			xue.logs('21.「开始计时」......')
+			// 防止多次start：「声音过小」切换到「录音中会」重新start
+			if(i == 0) {
+				counting = setInterval(function () {
+					i++;
+					timeRecord=i;
+					// xue.ls.set('startTime', i);
+
+					if(i>=40){
+						_this.dom.timer.text('');
+						var time=50-i;
+
+						if(time<=0){
+							time=0;
+						}
+						var str='录制即将超时，'+time+'s后自动提交'
+						showPrompt(str);
+					}else{
+						_this.dom.timer.text(i + 's');
+
+						if(timeRecord>3){
+							handle.tips.setContent('点击结束');
+						}
+					}
+
+
+					// }
+
+
+
+				}, 1000);
+			}
+		};
+
+		// 停止计时
+		var stop = function () {
+			xue.logs('22.「计时结束」......')
+
+			i = 0;
+			_this.dom.timer.text('');
+
+			clearInterval(counting);
+		};
+
+		// 返回对外接口
+		return {
+			'start' : start,
+			'stop'  : stop
+		};
+
+	})();
+
+	/**
+	 * 录音按钮状态
+	 */
+	var handle = {};
+
+	/**
+	 * 提交按钮
+	 * @type {{enable: [function], disable: [function]}}
+	 */
+	handle.submit = {
+
+		enable  : function () {
+			var _submit = _this.dom.submit;
+			_submit.show();
+			_submit.children().show();
+		},
+
+		disable : function () {
+			_this.dom.submit.hide();
+		}
+	};
+
+	/**
+	 * 录音按钮
+	 * @type {{status: status}}
+	 */
+	handle.button = {
+
+		/**
+		 * 录音按钮状态：0：默认；1、录音中；
+		 * @param state
+		 */
+		setStatus : function (state) {
+
+			var dom = _this.dom.handle,
+				src = 'startBtn.png';
+
+			if(process.state == 1){
+				src = 'record.png';
+			}else if(process.state == 7){
+				src = 'starting.png';
+			}
+
+			dom.attr('src', _this.attr.src + src);
+
+		},
+
+
+		// 点击事件
+		click : function () {
+			var sid=localStorage.getItem('sid');
+			var logid=localStorage.getItem('logid');
+
+			if(!_this.attr.mic){
+
+				var text=$("#speech_tips").text();
+				if(text=='重新提交'){
+ 					var logData = {
+				      'elem':$("#start-btn")[0],
+				      'params':'key=xeslog_speechEval_record&action=click_resend&logid='+logid+'&sid='+sid+'&isplayback='+isplayback+'&time='+new Date().getTime()
+				    };
+
+					// window.xesWeb_eventLog.xesEventLog('click',logData);
+
+
+					_this.resend();
+					resendCount++;
+				}else{
+					var logData = {
+				      'elem':$("#start-btn")[0],
+				      'params':'key=xeslog_speechEval_record&action=click_startRecord&logid='+logid+'&sid='+sid+'&isplayback='+isplayback+'&time='+new Date().getTime()
+				    };
+
+					// window.xesWeb_eventLog.xesEventLog('click',logData);
+
+					resendCount=1;
+					process.state = 7;
+					handle.button.setStatus('connecting');
+					handle.tips.setContent('别急，正在准备中...');
+					clearTimeout(showScoreTimer);
+					var player=document.getElementById('play_voive_audio');
+					if(!player.paused){
+						player.pause();
+				        player.src = '';
+				        // $("#play_icon").removeClass().addClass('play_icon_on');
+					}
+
+
+					audioUrl='';
+					$("#play_icon").removeClass().addClass('play_icon_off');
+					_this.connect();
+
+
+					// 移除结果框
+					clearTimeout(modelHide);
+					$(".liveModelBox").fadeOut();
+					$($('.liveModelBoxElem')[0]).empty();
+				}
+
+			}else{
+
+				var logData = {
+			      'elem':$("#start-btn")[0],
+			      'params':'key=xeslog_speechEval_record&action=click_stopRecord&logid='+logid+'&sid='+sid+'&isplayback='+isplayback+'&time='+new Date().getTime()
+			    };
+
+				// window.xesWeb_eventLog.xesEventLog('click',logData);
+
+				_this.stop();
+
+			}
+
+		}
+	};
+
+	/**
+	 * 设置录音按钮下的提示文字
+	 * tips
+	 * @type {{dom: (*), set: set, clear: clear}}
+	 */
+	handle.tips = {
+		dom : _this.dom.tips,
+		setContent : function (txt) {
+			this.dom.text(txt || '');
+		},
+		clean : function () {
+			this.dom.text('');
+		}
+	};
+
+
+	/**
+	 * 音量条
+	 * @type {{id: number, value: number, bar: *, setVal: setVal, setCircle: setCircle, draw: draw, start: start, stop: stop}}
+	 */
+
+	handle.volume = (function () {
+
+		var id = 0,// 音量动画ID
+			value = 0,// 音量值
+			bar = _this.dom.volume[0];// 音量条dom
+
+		var width = bar.width,
+			height = bar.height,
+			canvas = bar.getContext('2d');
+
+		// 设置音量值
+		var setVal  = function (val) {
+			value = val;
+		};
+
+		// 设置音量条
+		var setCircle = function (volume) {
+
+			//画灰色的圆
+			canvas.clearRect(0, 0, width, height);
+
+			canvas.beginPath();
+
+			canvas.strokeStyle = "#dbddef";
+
+			canvas.lineWidth = 4;
+
+			canvas.arc(width / 2, height / 2, 52, 0, Math.PI * 2, false);
+
+			canvas.stroke();
+
+			canvas.closePath();
+
+			//根据音量值算音量圆的弧度(每个数值对应的度数)
+
+			var Vdegs = volume * (360 / 30);
+
+			var Vr = Vdegs * Math.PI / 180;
+
+			canvas.beginPath();
+
+			canvas.strokeStyle = "#589a0a";
+
+			canvas.lineWidth = 4;
+
+			canvas.arc(width / 2, height / 2, 52, 0 - 90 * Math.PI / 180, Vr - 90 * Math.PI / 180, false);
+
+			canvas.stroke();
+
+			canvas.closePath();
+		};
+
+		// 绘制音量条
+		var draw = function () {
+
+			if(bar.style.display == "none"){
+
+				cancelAnimationFrame(id);
+
+			}
+
+			setCircle(value);
+
+			id = requestAnimationFrame(draw);
+		};
+
+		var start = function () {
+
+			_this.dom.volume.show();
+
+			// 防止多次start：「声音过小」切换到「录音中会」重新start
+			if(id == 0) {
+				id = requestAnimationFrame(draw);
+			}
+
+		};
+
+		var stop = function () {
+
+			//
+			canvas.clearRect(0, 0, width, height);
+			cancelAnimationFrame(id);
+
+			// 停止后重置，否则会出现多次渲染（多次start）
+			id = 0;
+
+
+		};
+
+		return {
+			'setCircle' : setCircle,
+			'draw' : draw,
+			'start' : start,
+			'stop' : stop,
+			'setVal' : setVal
+		};
+
+	})();
+
+
+
+	/**
+	 * 实例化讯飞接口
+	 */
+	var session = new IFlyIatSession({
+
+		"callback":{
+
+			"onResult" : _this.on.result,
+
+			"onVolume": _this.on.volume,
+
+			"onError": _this.on.error,
+
+			"onProcess":function(status){
+				switch (status){
+
+					// 开始录音
+					case 'onStart':
+						_this.on.start();
+						break;
+
+					case 'normalVolume':
+
+					// 录音中
+					case 'started':
+						_this.on.record();
+						break;
+
+					// 录音停止
+					case 'onStop':
+						_this.on.stop();
+						break;
+
+					// 会话结束
+					case 'onEnd':
+						_this.on.end();
+						break;
+
+					// 声音过小
+					case 'lowVolume':
+						_this.on.low();
+						break;
+
+					default:
+						handle.tips.setContent(status);
+				}
+			}
+		}
+	});
+
+	// 浏览器判断
+	if(!session.isSupport()){
+		console.log("not support");
+		showPrompt('当前浏览器不支持口语测评功能，要用谷歌/火狐浏览器或下载客户端哦！');
+		// handle.tips.setContent("当前浏览器不支持口语测评功能，请更换Chrome/Firefox浏览器进入直播间进行测评");
+		return;
+	}
+
+	// 绑定录音按钮点击事件
+	_this.dom.handle[0].addEventListener('click', function () {
+		/**
+		 * 增加链接中判断
+		 * @type {Array}
+		 * @private
+		 */
+
+		var flag=isfastclick();
+
+		// 当前点击被阻止
+		// if(flag==true){
+		// 	console.log("flag=true");
+		// 	return;
+		// }else{
+			if(process.state == 7){
+				return;
+			}
+
+			xue.logs(process.state, 'state');
+			methods.isOnline(function () {
+				// 只有当
+				if(process.state == 4 || process.state == -1 || process.state == 5) {
+					//开始录音
+
+					handle.button.click();
+					$("#highest_score").hide();
+					$("#prompt").hide();
+					$("#play_icon").removeClass().addClass('play_icon_off');
+					
+
+					// confirmPop({
+					// 	img: _this.attr.src + 'anew.png',
+					// 	content: '你确定要重新录制吗？',
+					// 	submit: function () {
+					// 		handle.button.click();
+					// 		$("#highest_score").hide();
+					// 		$("#prompt").hide();
+					// 	}
+					// });
+
+
+				} else {
+
+					// console.log("!!!click process.state : "+process.state);
+					// 停止录音
+					handle.button.click();
+				}
+			});
+			return;
+		// }
+	});
+
+
+
+	function isfastclick(){
+		// 保存本次点击的时间
+		var currentTime=new Date();
+		var timeInterval=currentTime-lastTime;
+		// 判断两次点击事件间隔
+		if (0 <= timeInterval&& timeInterval<= 2000) {
+			// 如果是快速点击，则返回true
+			return true;
+		}
+		// 如果不是快速点击，将本次点击的时间赋值给lastTime
+		lastTime = currentTime;
+		return false;
+	}
+
+
+	// 初始化时设置：评测内容及type
+	methods.setContent();
+
+	// 如果本地存储里面有录音结果，则改为录音完成状态
+	if(xue.ls.getItem('speech_totleScore') != null) {
+		handle.submit.enable();
+		process.state = 4;
+		// handle.tips.setContent('点击开始');
+
+	}else{
+		handle.submit.disable();
+	}
+
+	$.extend(_this, {
+		'process' : process,
+		'method'  : methods
+	});
+
+	return {
+		'this' : _this
+	};
+};
+//音频文件转换方法
+function arrayBufferToBase64( buffer ) {
+    var binary = '';
+    var bytes = new Uint8Array( buffer );
+    var len = bytes.byteLength;
+    for (var i = 0; i < len; i++) {
+        binary += String.fromCharCode( bytes[ i ] );
+    }
+    return window.btoa( binary );
+}
+
+function base64ToArrayBuffer(base64) {
+    var binary_string =  window.atob(base64);
+    var len = binary_string.length;
+    var bytes = new Uint8Array( len );
+    for (var i = 0; i < len; i++)        {
+        bytes[i] = binary_string.charCodeAt(i);
+    }
+    return bytes.buffer;
+}
+
+/** ======================== 业务相关 ============================ **/
+
+
+
+/* 试卷倒计时 ------------------------------------ start */
+
+var exam = exam || {};
+(function(){
+	var xexam = exam;
+	xexam.bar = $('.oral-test');
+	xexam.data = xexam.bar.data();
+	xexam.id = 'exam_' + xexam.data.key;
+	//结束时间
+	xexam.end = xexam.data.end;
+	//当前时间
+	xexam.now = xexam.data.now;
+	//剩余时间
+	xexam.remainTime = Number(xexam.end - xexam.now);
+	xexam.url = xexam.data.url;
+	xexam.key = xexam.data.key;
+	// 剩余时间计算
+	xexam.timeRemain = xexam.timeRemain || function( opt ){
+			var option = {
+				time   : 60,
+				expr   : null,
+				tpl    : '$minutes$分$seconds$秒',
+			};
+			$.extend(option, opt);
+			xexam.timeRemain.opt = option;
+			xexam.timeRemain.tpl = option.tpl || '$minutes$ 分 $seconds$ 秒';
+			xexam.timeRemain.time = option.time * 60;
+			xexam.timeRemain.box = $(option.expr);
+			return this.timeRemain;
+		};
+
+	//时间超出时重置倒计时
+	if (xexam.remainTime<0) {
+		var timePlus=Number(xexam.now - xexam.end);
+	}else{
+		var timePlus=0;
+	}
+
+	xexam.timeRemain.count = function(){
+		this.minutes = Math.floor(this.time / 60);
+		this.seconds = Math.floor(this.time % 60);
+		var html = this.tpl;
+		html = html.replace('$minutes$', this.minutes);
+		html = html.replace('$seconds$', this.seconds);
+		this.box.text(html);
+		this.time--;
+
+		if(this.time < 0){
+			this.box.css('color', '#ff7878');
+			this.minutes = Math.floor(timePlus / 60);
+			this.seconds = Math.floor(timePlus % 60);
+			var html = this.tpl;
+			html = html.replace('$minutes$', this.minutes);
+			html = html.replace('$seconds$', this.seconds);
+			this.box.text(html);
+			timePlus++;
+		}
+	};
+
+	xexam.timeRemain.start = function(){
+		this.timer = setInterval(function(){
+			xexam.timeRemain.count();
+		},1000);
+	};
+})();
+// 调用倒计时
+if($('#exam_remain').length > 0){
+	var a = exam.timeRemain({
+		time: exam.remainTime / 60,
+		expr: '#exam_remain',
+	}).start();
+}
+
+/* 试卷倒计时 ------------------------------------ end */
+
+//老师点击收卷
+function speechExamSubmitAll(){
+	$('.stop').css({display: 'inline-block'});
+	$('.stop').after('<div class="dialog_mask"></div>');
+	$('.stop').html('<h2 class="stopText">时间到！停止作答</h2>');
+	setTimeout(function(){
+		ajaxSubmitIf();
+		$('.stop').remove();
+		$('.dialog_mask').remove();
+	},3000);
+}
+
+
+//储存localStorage
+if (stuid != xue.ls.getItem('speech_stuId') || liveid != xue.ls.getItem('speech_liveid') || testid != xue.ls.getItem('speech_testId') || isplayback == 1){
+	xue.ls.removeItem('speech_totleScore');
+	xue.ls.removeItem('error');
+	xue.ls.removeItem('timeStampStart');
+	xue.ls.removeItem('timeStampNow');
+	xue.ls.removeItem('recorderBlobStr');
+}
+xue.ls.setItem('speech_stuId',stuid);
+xue.ls.setItem('speech_liveid',liveid);
+xue.ls.setItem('speech_testId',testid);
+
+var totle_score = xue.ls.getItem('speech_totleScore');
+
+totle_score = totle_score ? totle_score.split(',') : [];
+
+$(function () {
+
+	var imgSrc = '../english/img/';
+	// var imgSrc = '//res14.xesimg.com/live/img/speecheval/';
+	try {
+		window.speech = new Speech({
+			'appId'     : '57ce6e1c'
+
+			, 'appKey'    : '1bc0ad2f6c3d8661'
+
+			, 'lan'       : 'en'                        // 评测语言：en / cn
+
+			, 'type'      : 'read_word'                 // 评测类型：read_word（单词） ／ read_sentence （句子）
+
+			, 'src'       : imgSrc
+		});
+
+	}catch(e){
+		console.log(e);
+	}
+
+	// 点击交卷
+	$('body').on('click','.submit-img',function(){
+		// 有未答題点击交卷
+		confirmPop({
+			img : imgSrc + 'submitPrompt.png',
+			content :'你确定要提交吗？',
+			submit : function () {
+				ajaxExamSubmit();
+                //离开试卷日志
+                var str = 'JS speechExamEnd logData:' + testid;
+                speechClientLog(str);
+			}
+		});
+	})
+
+	// 点击关闭，交卷
+	$('body').on('click','#close_btn',function(){
+		// 有未答題点击交卷
+		// alert(window.location.host);
+		window.location.href='http://'+window.location.host;
+
+	})
+
+
+});
+
+//进入试卷日志
+$(function () {
+    var str = 'JS speechExamStart logData:' + testid;
+    speechClientLog(str);
+})
+
+// 播放当次录制音频
+$("#play_voive").on('click',function(){
+	var player=document.getElementById('play_voive_audio');
+
+	if(!$("#play_icon").hasClass('play_icon_off')){
+		$("#play_icon").removeClass().addClass('play_icon_playing');
+		if(!player.paused){
+			player.pause();
+	        player.src = '';
+	        $("#play_icon").removeClass().addClass('play_icon_on');
+		}else{
+			player.src=audioUrl;
+			player.play();
+		} 
+	}
+
+	// 监听录音播放结束
+	player.addEventListener('ended', function () {  
+    	$("#play_icon").removeClass().addClass('play_icon_on');
+	}, false);
+
+
+})
+
+// 显示成绩
+function showScore(score){
+	console.log(score);
+    var starNum=0;
+
+    if(score<40) starNum=1;
+    if(score>=40) starNum=2;
+    if(score>=60) starNum=3;
+    if(score>=75) starNum=4;
+    if(score>=90) starNum=5;
+
+    console.log(starNum);
+    for(var i=1;i<=5;i++){
+        var star=$("#highest_score #star"+i);  
+        if(i<=starNum){
+            if(star.hasClass('star_small_off'))
+                star.removeClass('star_small_off').addClass('star_small_on')
+        }else{
+            if(star.hasClass('star_small_on'))
+                star.removeClass('star_small_on').addClass('star_small_off')
+        }
+    }
+
+    var coin_total=$('.oral-test').data('coin');
+    var coin_num=0;
+
+    // 回放中 用户在直播中作答过这个题，不给金币
+    if(answered==1 && isplayback==1){
+    	coin_num=0;
+    	$("#coin_icon").hide();
+	    $("#coin_num").text('+'+coin_num).hide();
+    }else if(answered==0 && isplayback==1){
+    // 回放中 用户在直播过程中没有作答，超过30分给1个金币
+    	if(score>=40){
+    		coin_num=1;
+	    	$("#coin_icon").show();
+			$("#coin_num").text('+'+coin_num).show();
+    	}else{
+    		coin_num=0;
+	    	$("#coin_icon").hide();
+	    	$("#coin_num").text('+'+coin_num).hide();
+    	}
+    }else{
+   	// 直播过程中根据得分奖励金币
+   		// 作答过不给金币
+   		if(answered){
+   			coin_num=0;
+	    	$("#coin_icon").hide();
+	    	$("#coin_num").hide();
+   		}else {
+	    	if(score<40){
+		    	coin_num=0;
+		    	$("#coin_icon").hide();
+		    	$("#coin_num").hide();
+		    }else if(score<60){
+		    	coin_num=Math.ceil(coin_total/3);
+		    	if(coin_num==0){
+			    	$("#coin_icon").hide();
+			    	$("#coin_num").text('+'+coin_num).hide();
+		    	}else{
+			    	$("#coin_icon").show();
+			    	$("#coin_num").text('+'+coin_num).show();	    		
+		    	}
+		    }else if(score<75){
+		    	coin_num=Math.ceil(coin_total/3*2);
+		    	if(coin_num==0){
+					$("#coin_icon").hide();
+					$("#coin_num").text('+'+coin_num).hide();
+		    	}else{
+		    		$("#coin_icon").show();
+		    		$("#coin_num").text('+'+coin_num).show();
+		    	}
+
+		    }else{
+		    	coin_num=coin_total;
+		    	if(coin_num==0){
+					$("#coin_icon").hide();
+					$("#coin_num").text('+'+coin_num).hide();
+		    	}else{
+		    		$("#coin_icon").show();
+		    		$("#coin_num").text('+'+coin_num).show();
+		    	}
+		    }
+   		}
+    }
+
+    $("#highest_score").css('display','inline-block');
+
+}
+
+
+// 展示提示语
+function showPrompt(text){
+	$("#highest_score").hide();
+	$("#prompt").text(text).css('display','inline-block');
+}
+
+// 显示成绩特效框
+function showModel(score,language){
+	var $model = $('<div class="liveModelBox">\
+		<div class="shadow"></div>\
+		<div class="fireStar"></div>\
+		<div class="mainContent">\
+			<div class="title"></div>\
+			<div class="monkey"></div>\
+			<ul class="starBox">\
+				<li class="yellowStar"></li>\
+				<li class="yellowStar"></li>\
+				<li class="yellowStar"></li>\
+				<li class="yellowStar"></li>\
+				<li class="yellowStar"></li>\
+				<li class="star star1"></li>\
+				<li class="star star2"></li>\
+				<li class="star star3"></li>\
+				<li class="star star4"></li>\
+				<li class="star star5"></li>\
+			</ul>\
+			<div class="text"></div>\
+			<div class="goldPromt">（我们会根据你的最高成绩奖励金币哦~）</div>\
+		</div>\
+	</div>');
+	$('.liveModelBoxElem').append($model);
+	// 随机产生25颗闪烁的星星
+	for(var i = 0;i < 25; i++){
+		// 产生随机的left值和top值
+		var left = Math.round(Math.random()*500) + 100;
+		var top = Math.round(Math.random()*250) + 100;
+
+		// 动态生成星星元素
+		var $div=$('<div class="littleStar"></div>');  
+		$(".liveModelBox").append($div);
+		var num = Math.round(Math.random()*10) + 7;
+		$($('.littleStar')[i]).css({
+			width: num,
+			height: num ,
+			left: left,
+			top: top,
+			animationDelay:Math.round(Math.random()*500)+'ms'
+		});
+	}
+	// 显示模态框
+	$(".liveModelBox").fadeIn();
+
+	
+
+	// 定义星星个数
+	var star = 0;
+	
+	// 评语数组
+	var chineseComment = {
+		1:['不要气馁，继续加油','声音小啦，大点声哦'],
+		2:['要努力哦!','要勇敢的读出来'],
+		3:['读的很棒啦!','读的不错哦!'],
+		4:['你是最棒的','读的真好','为你点赞'],
+		5:['播音员水平啦','你就是个天才','简直难以置信'],
+	};
+	var englishComment = {
+		1:['Keep trying','Louder, please'],
+		2:['Try Harder','You can be better!'],
+		3:['Nice','Not bad'],
+		4:['Great','Good Job','Well done'],
+		5:['Awesome','Fantastic','Unbelievable'],
+	}
+
+
+
+	if(score >= 0 && score < 40){
+		star = 1;
+		$(".monkey").addClass('hardWorkMonkey');
+	}
+	// 20≤2颗星＜40
+	else if(score >= 40 && score < 60){
+		star = 2;
+		$(".monkey").addClass('hardWorkMonkey');
+	}
+	// 40≤3颗星＜60
+	else if(score >= 60 && score < 75){
+		star = 3;
+		$(".monkey").addClass('giggleMonkey');
+	}
+	// 60≤4颗星＜80
+	else if(score >= 75 && score < 90){
+		star = 4;
+		$(".monkey").addClass('greatMonekey');
+	}
+	// 80≤4颗星≤100
+	else if(score >= 90 && score <= 100){
+		star = 5;
+		$(".monkey").addClass('greatMonekey');
+	}
+
+	// 产生一个随机数,随机产生评语
+	var num = 0;
+	if(language == 'english'){
+		$(".title").addClass('englishTitle');
+		num = Math.floor(Math.random()*englishComment[star].length);
+		$(".mainContent .text").html(englishComment[star][num]);
+		$(".mainContent .text").css({
+			fontSize: '55px',
+			fontWeight: 'bold'
+		});
+	}else{
+		$(".title").addClass('chineseTitle');
+		num = Math.floor(Math.random()*chineseComment[star].length);
+		$(".mainContent .text").html(chineseComment[star][num]);
+	}
+
+
+	// 声明动画对象
+	var scene = new TimeLine();
+
+	// 添加动作
+	scene.add(0,function(){
+		for(var i = 1;i<=5;i++){
+			if(i <= star){
+				// 给星星添加动画
+				$($(".yellowStar")[i-1]).addClass('on'+ i);
+				(function(i){
+					setTimeout(function(){
+						// 星星放大效果
+						$($(".yellowStar")[i-1]).addClass('largeScale');
+						// 隐藏后面灰色星星
+						setTimeout(function(){
+							$($(".star")[i-1]).hide();
+						},400);
+					},i*300);
+				})(i)
+			}
+		}
+	},'星星掉落');
+
+	// 设置文字显示时间
+	var textTimeout = 300;
+	if(star == 2){
+		textTimeout = 600;
+	}else if(star == 3){
+		textTimeout = 900;
+	}else if(star == 4){
+		textTimeout = 1200;
+	}else if(star == 5){
+		textTimeout = 1500;
+	}
+	console.log(textTimeout)
+
+	scene.add(textTimeout,function(){
+		$(".text").fadeIn();
+	},'金币掉落');
+
+
+	// 显示金币奖励提示语
+	if(!(answered==1 && isplayback==1)){
+		if(score < maxScore[0]){
+			scene.add(textTimeout + 300,function(){
+				$(".goldPromt").fadeIn();
+			},'金币掉落');
+		}
+	}
+	
+	// 设置提示语显示时间
+	
+
+	// 设置金币掉落延迟时间
+	// var goldTimeout;
+	// if(star == 2){
+	// 	goldTimeout = 200;
+	// }else if(star == 3){
+	// 	goldTimeout = 500;
+	// }else if(star == 4){
+	// 	goldTimeout = 900;
+	// }else if(star == 5){
+	// 	goldTimeout = 1300;
+	// }
+	// // 大于1颗星时才会掉落金币
+	// if(star > 1){
+	// 	// 金币掉落动画
+	// 	scene.add(goldTimeout,function(){
+	// 	$($(".smallGold1")).addClass('smallGoldAnimation1');
+	// 	$($(".smallGold2")).addClass('smallGoldAnimation2');
+	// 	$($(".smallGold3")).addClass('smallGoldAnimation3');
+	// 	},'金币掉落');
+
+	// 	// 金币个数动画
+	// 	scene.add(goldTimeout + 1000,function(){
+	// 		$(".goldText").html('+1');
+	// 		$(".goldText").css({
+	// 			paddingLeft: '80px',
+	// 			marginTop: '5px'
+	// 		});
+	// 		$('.goldText').addClass('goldTextAnimation')
+	// 	},'金币特效')
+	// }
+
+	modelHide=setTimeout(function(){
+		$(".liveModelBox").fadeOut();
+		$($('.liveModelBoxElem')[0]).empty();
+	},5000);
+	// scene.add(5000,function(){
+	// 	// 显示模态框
+	// 	$(".liveModelBox").fadeOut();
+	// 	$($('.liveModelBoxElem')[0]).empty();
+	// },'模态框消失')
+
+	// 执行动作
+	scene.start();
+
+
+	// 时间轴对象构造器
+	function TimeLine(){
+		this.order = [];  //定义动画序列
+
+		/*
+		 * 添加要执行的动作
+		 * @param  {Number} timeout 触发动画的时间
+		 * @param  {Function} fun 触发后执行的函数
+		 * @param  {String} log  执行动画的说明
+		 */
+		this.add = function(timeout,fun,log){
+			this.order.push({
+				timeout:timeout,
+				func:fun,
+				log:log,
+			})
+		}
+
+		/*
+		 * 执行定义好的动作
+		 * @param  {Number} ff 要提前的时间(支持快进)
+		 */
+		this.start = function(ff){
+			for(var s in this.order){
+				(function(me){
+					var timeout = me.timeout;
+					var fn = me.func;
+					var log = me.log;
+
+					setTimeout(fn,timeout);
+					setTimeout(function(){
+						console.log('time->',timeout,'log->',log);
+					},timeout)
+					timeout = Math.max(timeout - (ff || 0),0);
+				})(this.order[s])
+			}
+		}
+	}
+	
+}

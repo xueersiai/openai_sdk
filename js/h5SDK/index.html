@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	<button id="start">开始</button>
+	<button id="end">结束</button>
+	<div>
+		<div class="showflag">提示语： <p id="textHtml"></p></div>
+		<div>
+			音量：
+			<span id="volume"></span>
+		</div>
+		<div>
+			结果：
+			<span id="result"></span>
+		</div>
+		<div>
+			错误：
+			<span id="error" style="color:red;"></span>
+		</div>
+		<div class="showflag">
+			原音
+			<audio src="" id="audioOrigin" controls></audio>
+		</div>
+		<div>
+			音频
+			<audio src="" id="audio" controls></audio>
+		</div>
+	</div>
+	<script type="text/javascript" src="js/jquery.min.js"></script>
+	<script type="text/javascript" src="js/ise.js"></script>
+	<script type="text/javascript">
+		
+		// 用来切换测评中英文 1是英文 2是中文  3是识别
+		var changeShape = '3'
+		//单句测评与多句测评模式选项，多句测评模式置为1 单句测评为0
+		var multiSentLoop = '0'
+
+
+		/**
+		 * 录音状态
+		 * 0:初始化 1：点击开始 2：录音中 3：点击停止 4：返回正常结果 5：返回错误
+		 */
+		var process = {
+			'state' : 0
+		}
+
+		// 回调事件	
+		var on = {
+			// 音量发生变化时
+			volume : function (value){
+				$("#volume").text(value)
+			},
+			// 点击开始
+			start : function (){
+				$("#volume").text('');
+				$("#audio").attr('src','');
+				$("#start").attr('disabled',"disabled");
+				$("#result").text('');
+				$("#error").text('');
+			},
+			// 点击结束
+			stop : function (){
+				var file = session.getMp3Blob();
+				var url = URL.createObjectURL(file);
+				$("#start").removeAttr('disabled');
+	           	$("#audio").attr('src',url);
+			},
+			// 录音中
+			record : function () {
+				process.state = 2
+			},
+			// 处理返回结果
+			result : function (result) {
+				process.state = 4
+				console.log(result)
+				result = JSON.stringify(result)
+				$("#result").html($("#result").text()+'<br/>'+result+'<br/>');
+			},
+			// 处理错误
+			error : function (err) {
+				process.state = 5
+				console.log('err', err)
+				$("#error").html(err);
+			},
+			// 音量太小提示
+			low : function () {
+
+			}
+		}
+		var session = new XueASR({
+			"callback":{
+				"onResult" : on.result,
+				"onVolume": on.volume,
+				"onError": on.error,
+				"onProcess":function(status){
+					switch (status){
+						// 录音中
+						case 'onRecord':
+							on.record();
+							break;
+						// 停止
+						case 'onStop':
+							on.stop();
+							break;
+						// 开始
+						case 'onStart':
+							on.start();
+							break;
+						// 声音过小
+						case 'lowVolume':
+							on.low();
+							break;
+						default:
+					}
+				}
+			}
+		});
+		// 判断测评的中英文的文字展示
+		if(changeShape === '1') {
+			$('#textHtml').html('Whatever is worth doing is worth doing well.')
+			$('#audioOrigin').attr('src', './en.mp3')
+		} else if(changeShape === '2'){
+			$('#textHtml').html('任何值得做的 | 就把它做好')
+			$('#audioOrigin').attr('src', './zh.mp3')
+		} else if (changeShape === '3' || changeShape === '4'){
+			$('.showflag').hide()
+		} 
+
+		// 传递url
+		
+		// 当点击了开始
+		$("#start").click(function(){
+			// 不能重复点击
+			if (process.state == 1) return;
+			process.state = 1
+			var params = {}
+			var webscoketURL = function (url, id){
+				params.webscoketURL=url
+				params.pid=id;
+			}
+			var world = $('#textHtml').text()
+			console.log('params.ise_word', world)
+			if(changeShape === '1' || changeShape === '2'){
+				params.spec = {
+					"assess_ref": world,
+					"vad_max_sec": "15",
+
+					"vad_pause_sec": "3",
+			
+					"vad_st_sil_sec": "5",
+			
+					"sil_tips_sec": "200",
+			
+					"voiceless_penal": "1",
+					//单句测评与多句测评模式选项，多句测评模式置为1 单句测评为0
+					"multi_sent_loop": multiSentLoop,
+			
+					"need_out_wd_sec": "0",
+				}
+			} else if (changeShape === '3' || changeShape === '4'){
+				
+				params.spec = {
+					"vad_max_sec": "15",
+
+					"vad_pause_sec": "3",
+			
+					"vad_st_sil_sec": "5",
+			
+					"long_speech": '1'
+				}
+			}
+			
+
+			switch (changeShape) {
+				case '1':
+					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/evl/en?app_key=8102b22a5e81e840176d9f381ec6f837", "1103101")
+					break;
+				case '2':
+					// 中文
+					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/evl/zh?app_key=8102b22a5e81e840176d9f381ec6f837", "1103103")
+					break;
+				case '3':
+					// 中文
+					webscoketURL("ws://192.168.34.145:18092/v1/api/speech/asr/zh?app_key=8102b22a5e81e840176d9f381ec6f837", "")
+					break;
+				case '4':
+					// 英文
+					webscoketURL("ws://192.168.34.145:18092/v1/api/speech/asr/en?app_key=8102b22a5e81e840176d9f381ec6f837", "")
+					break;
+			}
+
+
+			session.start(params)
+
+		})
+
+		// 点击了结束
+		$("#end").click(function(){
+			process.state = 3
+			session.stop()
+		})
+	</script>
+</body>
+</html>
