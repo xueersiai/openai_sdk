@@ -1,0 +1,148 @@
+page {
+  background: #fff; 
+}
+.followResult {
+  
+}
+.followResult .head-bg {
+  width: 750rpx;
+  height: 286rpx;
+  margin-bottom: 80rpx;
+  position: relative;
+}
+.followResult .head-content {
+  width: 670rpx;
+  height: 260rpx;
+  background: #fff;
+  box-shadow: 0px 7px 15px 0px rgba(116,143,185,0.23);
+  border-radius: 8px;
+  position: absolute;
+  left: 5%;
+  top: 10%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+.head-content .head {
+  width:140rpx;
+  height:140rpx;
+  border-radius: 50%;
+  position: absolute;
+  left: 40%;
+  top: -25%;
+}
+.head-content .head .head-img {
+  width:140rpx;
+  height:140rpx;
+  border-radius: 50%;
+}
+.head-content .score-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  margin-left: 5px;
+}
+.head-content .score-item .score {
+  font-size:48rpx;
+  font-family:PingFangSC-Medium;
+  font-weight:500;
+  color:#688BFF;
+  line-height:40rpx;
+}
+.head-content .score-item .score-info {
+  font-size:26rpx;
+  font-family:PingFangSC-Regular;
+  font-weight:400;
+  color:#999999;
+  line-height:26rpx;
+  margin-top: 28rpx;
+}
+/* 每个句子得分情况 */
+.results {
+
+}
+.results .result-item {
+  width:590rpx;
+  background: #fff;
+  box-shadow:0px 7px 15px 0px rgba(116,143,185,0.23);
+  border-radius:8px;
+  margin-left: 40rpx;
+  margin-top:40rpx;
+  padding: 40rpx;
+}
+.result-item .result-info {
+  width:590rpx;
+  font-size:40rpx;
+  font-family:PingFangSC-Regular;
+  font-weight:400;
+  color:#14AC84;
+  line-height: 56rpx;
+}
+.result-item .result-button {
+  display: flex;
+  flex-direction: row;
+  margin-top: 50rpx;
+}
+.result-button .myVoice {
+  width: 280rpx;
+  height: 64rpx;
+  background:rgba(104,139,255,0.1);
+  border-radius: 32rpx;
+  border:1px solid #688BFF;
+  font-size: 28rpx;
+  font-family: PingFangSC-Regular;
+  font-weight: 400;
+  color: #5C82FF;
+  line-height: 64rpx;
+  text-align: center;
+  display:flex;
+  justify-content: center
+}
+.myVoice .score {
+  font-size: 40rpx;
+  font-family: PingFangSC-Medium;
+  font-weight: 500;
+  color: #688BFF;
+  margin-left: 20rpx;
+  vertical-align: middle;
+}
+.result-button .original {
+  width: 280rpx;
+  height: 64rpx;
+  background:rgba(104,139,255,0.1);
+  border-radius: 32rpx;
+  border:1px solid #688BFF;
+  font-size: 28rpx;
+  font-family: PingFangSC-Regular;
+  font-weight: 400;
+  color: #5C82FF;
+  line-height: 64rpx;
+  text-align: center;
+  margin-left: 30rpx;
+}
+.line {
+  width: 590rpx;
+  height: 2rpx;
+  background: #F5F5F5;
+  margin-top: 40rpx;
+}
+.error {
+
+} 
+.error .error-item {
+  margin-top: 40rpx;
+}
+.error-item .voice {
+  width: 34rpx;
+  height: 24rpx;
+  margin-right: 40rpx;
+}
+.error-word {
+  font-size: 34rpx;
+  font-family: PingFangSC-Regular;
+  font-weight: 400;
+  color: #E26C80;
+  letter-spacing: 2rpx;
+}

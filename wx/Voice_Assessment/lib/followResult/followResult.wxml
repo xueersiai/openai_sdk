@@ -1,0 +1,46 @@
+<import src="../../lib/wxParse/wxParse.wxml"/>
+<view class="followResult">
+  <image class="head-bg" src="/images/head-bg.png"></image>
+  <!-- 头部内容 -->
+  <view class="head-content">
+    <view class="head">
+      <image class="head-img" src="/images/head.png"></image> 
+    </view>
+    <view class="score-item">
+      <text class="score">{{totalScore}}</text>
+      <!-- total_score -->
+      <text class="score-info">总分</text>  
+    </view>
+    <view class="score-item">
+      <text class="score">{{contScore}}</text>
+      <!-- cont_score -->
+      <text class="score-info">连贯分</text>  
+    </view>
+    <view class="score-item">
+      <text class="score">{{pronScore}}</text>
+      <!-- pron_score -->
+      <text class="score-info">发音分</text>  
+    </view>
+  </view>
+  <!-- 每个句子得分情况 -->
+  <view class="results">
+    <view wx:if="{{resultAll.length >= 1}}" wx:for="{{replyTemArray}}" wx:key="" class="result-item">
+      <view class="result-info"><template is="wxParse" data="{{wxParseData:item}}"/></view>
+      <!-- 读音 -->
+      <view class="result-button">
+        <view class="myVoice" bindtap="bindMinePlay" >我的读音<text class="score">{{sentenceResult[index].myscore}}</text></view>
+        <view class="original" bindtap="bindNative" data-pageindex="0">原音</view>
+      </view>
+      <!-- 分割线 -->
+      <view class="line"></view>
+      <!-- 纠错单词 -->
+      <view class="error" wx:for="{{sentenceResult[index].lowWord}}" wx:for-index="idx">
+        <view class="error-item" bindtap="rightVoice"  data-pageindex="0" data-wordindex='{{item.index}}'>
+          <!-- <image class="voice" src="/images/voice-icon.png" ></image> -->
+          <text class="error-word">{{item.word}}</text>
+          <text class="error-word">  得分:{{item.fraction}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,45 @@
+<template name="skxTestPage">
+  <view class='pronunciationTitle'>{{pagetitle}}</view>
+
+  <view class='content'>
+    <view class="title"></view>
+    <text class="contentInfo">{{showassess_ref}}</text>
+  </view>
+  <view class="voice-buttons">
+    <view class="native">
+      <image class="native-voice" bindtap="bindNative" data-showaa="nimei" src="{{nativeVoiceImg}}"></image>
+      <text>{{nativeText}}</text>
+    </view>
+    <!-- 录音按钮 -->
+    <view class="record">
+      <image class="record-voice" bindtap="bindRecord" src="{{recordImg}}"></image>
+      <text>{{recordText}}</text>
+    </view>
+    <view class="mine">
+      <image class="myvoice" bindtap="bindMinePlay" src="{{myvoiceImg}}"></image>
+      <text>我的读音</text>
+    </view>
+  </view>
+
+  <!-- <view class="vocabularyview">
+    <button bindtap="initsystem" data-newdate='zh'>初始化</button>
+  </view> -->
+  <!-- <view class="vocabularyview">
+    <button bindtap="Vocabulary" data-newdate='zh'>中文测评</button>
+    <button bindtap="Vocabulary" data-newdate='en'>英文测评</button>
+  </view> -->
+
+  <!-- <view wx:if="{{showboolean==true}}" class="socketbox">
+    <view bindtap="opensocket"><button>socket链接</button></view>
+    <view bindtap="closesocket"><button>socket关闭</button></view>
+    <view bindtap="closebutton"><button>关闭语音</button></view>
+  </view>
+   -->
+  <!-- <view bindtap="opensocket"><button>socket链接</button></view>
+  <view bindtap="closesocket"><button>socket关闭</button></view> -->
+  <view class='closeChange' bindtap="initsystem"><button>初始化</button></view>
+
+
+  <!-- 测试wxparse -->
+  <!-- <view bindtap="goTowxParse"><button>跳转到wxParse</button></view> -->
+</template>
