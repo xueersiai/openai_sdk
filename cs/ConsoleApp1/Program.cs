@@ -17,9 +17,9 @@ namespace ConsoleApp1
     {
         static string base64 = "";
 
-        static string ap_key = "82490dd53b071f22481a3743d4e22923f15804e2";
+        static string ap_key = "8102b22a5e81e840176d9f381ec6f837";
 
-        static string ap_secret = "9bdcee4f6b3949062292a73a90024358951c4fb50888af6e9d77fbfd891c2fb1";
+        static string ap_secret = "f308ce31e42e366093c01e5283f1acc02c2cd47492f5c8633b55d58930be2b2c";
 
         static string nonce_str = "fa577ce340859f9fe";
 
