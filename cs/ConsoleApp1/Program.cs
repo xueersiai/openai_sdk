@@ -19,6 +19,7 @@ namespace ConsoleApp1
 
         static string ap_key = "8102b22a5e81e840176d9f381ec6f837";
 
+        // 安全接入时建议换成自己的app_key和app_secret        
         static string ap_secret = "f308ce31e42e366093c01e5283f1acc02c2cd47492f5c8633b55d58930be2b2c";
 
         static string nonce_str = "fa577ce340859f9fe";
