@@ -1,2 +1,14 @@
 # openai_sdk
-学而思网校AI开放平台_SDK
+.
+├── README.md
+├── android      
+├── cpp          
+├── cs           
+├── go           
+├── ios          
+├── java         
+├── js           
+├── php          
+├── python       
+└── wx                  
+
