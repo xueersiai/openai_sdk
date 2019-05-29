@@ -5,29 +5,36 @@
 	<title>Document</title>
 </head>
 <body>
-	<button id="start">开始</button>
-	<button id="end">结束</button>
-	<div>
-		<div class="showflag">提示语： <p id="textHtml"></p></div>
+	<div class="title-box">
+		<button id="Evaluation">  测评 </button>
+		<button id="Distinguish">  识别 </button>
+	</div>
+
+	<div class="operation" style="display:none">
+		<button id="start">开始</button>
+		<button id="end">结束</button>
 		<div>
-			音量：
-			<span id="volume"></span>
-		</div>
-		<div>
-			结果：
-			<span id="result"></span>
-		</div>
-		<div>
-			错误：
-			<span id="error" style="color:red;"></span>
-		</div>
-		<div class="showflag">
-			原音
-			<audio src="" id="audioOrigin" controls></audio>
-		</div>
-		<div>
-			音频
-			<audio src="" id="audio" controls></audio>
+			<div class="showflag">提示语： <p id="textHtml"></p></div>
+			<div>
+				音量：
+				<span id="volume"></span>
+			</div>
+			<div>
+				结果：
+				<span id="result"></span>
+			</div>
+			<div>
+				错误：
+				<span id="error" style="color:red;"></span>
+			</div>
+			<div class="showflag">
+				原音
+				<audio src="" id="audioOrigin" controls></audio>
+			</div>
+			<div>
+				音频
+				<audio src="" id="audio" controls></audio>
+			</div>
 		</div>
 	</div>
 	<script type="text/javascript" src="js/jquery.min.js"></script>
@@ -38,6 +45,7 @@
 		var changeShape = '3'
 		//单句测评与多句测评模式选项，多句测评模式置为1 单句测评为0
 		var multiSentLoop = '0'
+		
 
 
 		/**
@@ -47,6 +55,9 @@
 		var process = {
 			'state' : 0
 		}
+
+
+
 
 		// 回调事件	
 		var on = {
@@ -131,7 +142,24 @@
 		} 
 
 		// 传递url
-		
+
+		$("#Evaluation").click(function(){
+			$(".operation").show()
+			console.log('测评')
+
+		})
+
+
+		$("#Distinguish").click(function(){
+
+			console.log('识别')
+
+		})
+
+
+
+
+
 		// 当点击了开始
 		$("#start").click(function(){
 			// 不能重复点击
