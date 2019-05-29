@@ -83,15 +83,16 @@ public class OCRConnect {
                     long t1=System.currentTimeMillis();
                     params.put("time_stamp",t1+"");
                     params.put("nonce_str","fa577ce340859f9fe");
+                    
+                    String sign=getReqSign(params,appsec);
+                    Log.i(TAG,"sign="+sign);
+                    params.put("sign",sign);
+                    
                     FileInputStream fis = new FileInputStream("/sdcard/1.png");
                     Bitmap bitmap  = BitmapFactory.decodeStream(fis);
                     String bitmap64=Bitmap2StrByBase64(bitmap);
                     params.put("img",bitmap64);
                     params.put("img_type","BASE64");
-
-                    String sign=getReqSign(params,appsec);
-                    Log.i(TAG,"sign="+sign);
-                    params.put("sign",sign);
 
                     Log.i(TAG,"start post");
                     String result = HttpUtil.sendPostMessage(params,"utf-8");
