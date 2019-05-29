@@ -105,14 +105,10 @@ namespace ConsoleApp1
             dic.Add("app_key", app_key);//appkey
             dic.Add("time_stamp", times );
             dic.Add("nonce_str", nonce_str);
-            dic.Add("img", base64 );
-            dic.Add("img_type", "URL");
             List<string> key = new List<string>();
             key.Add("app_key");
             key.Add("time_stamp");
             key.Add("nonce_str");
-            key.Add("img");
-            key.Add("img_type");
             key.Sort();
             string str = "";
             foreach (var item in key)
