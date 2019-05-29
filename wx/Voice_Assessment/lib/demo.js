@@ -57,7 +57,6 @@ function doUpload(imgUrl) {
     });
 }
 
-// 安全登录生成
 function getSign(params, appsecret) {
     let paramsKey = objKeySort(params)
     var signStr = ""

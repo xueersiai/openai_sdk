@@ -102,7 +102,7 @@ Page({
         WxParse.wxParseTemArray("replyTemArray", 'reply', sentenceResult.length, that)
       }
     }
-
+    getApp().globalData.testResult = [];
   }, 
   // 正确的发音
   rightVoice: function (e) {
@@ -169,7 +169,7 @@ Page({
     // debugger
     // console.log(this.data.stopVoice)
     var _this = this
-    var recordTextsSrc = getApp().globalData.recordTexts
+    var recordTextsSrc = getApp().globalData.cpluyinurl
     // console.log(recordTextsSrc[0])
     if (this.data.innerAudioContext == '') {
       var innerAudioContext = wx.createInnerAudioContext();
@@ -179,7 +179,7 @@ Page({
     }
     // console.log(this.data.index)
     console.log(this.data.innerAudioContext)
-    this.data.innerAudioContext.src = recordTextsSrc[pageidx] //这里可以是录音的临时路径
+    this.data.innerAudioContext.src = recordTextsSrc//这里可以是录音的临时路径
     this.data.innerAudioContext.play()
     this.data.innerAudioContext.onPlay(function () {
       // this.data.innerAudioContext.pause()
@@ -198,22 +198,5 @@ Page({
       // nativeVoiceImg: '/images/playing.png',
       // nativeText: '播放中',
     })
-    // 判断停止还是播放
-    // if (this.data.stopVoice) {
-    //   this.data.innerAudioContext.src = this.data.src;  //这里可以是录音的临时路径
-    //   this.data.innerAudioContext.play()
-    //   this.setData({
-    //     nativeVoiceImg: '/images/playing.png',
-    //     nativeText: '播放中',
-    //     stopVoice: false
-    //   })
-    // } else {
-    //   this.data.innerAudioContext.pause()
-    //   this.setData({
-    //     nativeVoiceImg: '/images/myvoice.png',
-    //     nativeText: '暂停',
-    //     stopVoice: true
-    //   })
-    // }
   }
 })

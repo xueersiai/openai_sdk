@@ -1,9 +1,0 @@
-<import src="../../lib/wxParse/wxParse.wxml"/>
-<!--pages/test/test.wxml-->
-<text>pages/test/test.wxml</text>
-<template is="wxParse" data="{{wxParseData:article.nodes}}"/>
-
-
-<block wx:for="{{replyTemArray}}" wx:key="">
-    列表：{{index}}:<template is="wxParse" data="{{wxParseData:item}}"/>        
-</block>
