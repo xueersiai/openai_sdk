@@ -102,54 +102,50 @@ function concatenate(resultConstructor, ...arrays) {
  *  newbyteLength1   分包音频
  */
 
-function getDataList(randomNum, assess_ref, idx, newbyteLength1, aidata) {
-  console.log('这里是拼装数据的', aidata)
+function getDataList(randomNum, assess_ref, idx, newbyteLength1, aidata, newCeping) {
+  console.log('这里是拼装数据的', aidata, newCeping)
   let showdata = aidata
   let title = 'ai-test' + randomNum
-  let sendstr = JSON.stringify({
-    "common": {
-      "sid": randomNum,  // sid，全局唯一
-      "idx": idx,                                      //分段音频的次序 
-      "compress": "2"
-    },
-    "spec": {
-      "assess_ref": assess_ref,                  //测评文本 
-      "vad_max_sec": showdata.vad_max_sec || "90",                    //默认30s, 说话最大时长 
-      "vad_pause_sec": showdata.vad_pause_sec || "3",                 //默认5s, 说话后静音停止时间 
-      "vad_st_sil_sec": showdata.vad_st_sil_sec || "3",               //默认为10s, 说话前最大静音时长 
-      "sil_tips_sec": showdata.sil_tips_sec || "200",                 //静音时长提示，单位是10ms 
-      "voiceless_penal": showdata.voiceless_penal || "1",             //清音惩罚选项，测评单词时对清音发音好坏更敏感
-      "multi_sent_loop": showdata.multi_sent_loop || "1",             //单句测评与多句测评模式选项，多句测评模式置为1
-      "need_out_wd_sec": "0",                         //测评文本时间码返回选项，返回对应单词或字的起始时间
-      "extra": {}                                     //扩展字段，可有可无，方便后续扩展
-    },
-    "audio": newbyteLength1                             //音频字节流,需要转为二进制流
-  })
+  let sendstr
+  if (newCeping === '1' || newCeping === '2') {
+    sendstr = JSON.stringify({
+      "common": {
+        "sid": randomNum,  // sid，全局唯一
+        "idx": idx,                                      //分段音频的次序 
+        "compress": "2"
+      },
+      "spec": {
+        "assess_ref": assess_ref,                  //测评文本 
+        "vad_max_sec": showdata.vad_max_sec || "90",                    //默认30s, 说话最大时长 
+        "vad_pause_sec": showdata.vad_pause_sec || "3",                 //默认5s, 说话后静音停止时间 
+        "vad_st_sil_sec": showdata.vad_st_sil_sec || "3",               //默认为10s, 说话前最大静音时长 
+        "sil_tips_sec": showdata.sil_tips_sec || "200",                 //静音时长提示，单位是10ms 
+        "voiceless_penal": showdata.voiceless_penal || "1",             //清音惩罚选项，测评单词时对清音发音好坏更敏感
+        "multi_sent_loop": showdata.multi_sent_loop || "1",             //单句测评与多句测评模式选项，多句测评模式置为1
+        "need_out_wd_sec": "0",                         //测评文本时间码返回选项，返回对应单词或字的起始时间
+        "extra": {}                                     //扩展字段，可有可无，方便后续扩展
+      },
+      "audio": newbyteLength1                             //音频字节流,需要转为二进制流
+    })
+  } else if (newCeping === '3' || newCeping === '4') {
+    sendstr = JSON.stringify({
+      "common": {
+        "sid": randomNum,  // sid，全局唯一
+        "idx": idx,                                      //分段音频的次序 
+        "compress": "2"
+      },
+      "spec": {
+        "vad_max_sec": showdata.vad_max_sec || "20",                    //默认30s, 说话最大时长 
+        "vad_pause_sec": showdata.vad_pause_sec || "3",                 //默认5s, 说话后静音停止时间 
+        "vad_st_sil_sec": showdata.vad_st_sil_sec || "8.0",               //默认为10s, 说话前最大静音时长 
+        "long_speech": showdata.long_speech || "",
+        "extra": {}                                     //扩展字段，可有可无，方便后续扩展
+      },
+      "audio": newbyteLength1                             //音频字节流,需要转为二进制流
+    })
+  }
 
 
-  return sendstr
-}
-function getDataList1(randomNum, assess_ref, idx, newbyteLength1, aidata) {
-  console.log('这里是拼装数据的', aidata)
-  let showdata = aidata
-  let title = 'ai-test' + randomNum
-  let sendstr = JSON.stringify({
-    "common": {
-      "sid": randomNum,  // sid，全局唯一
-      "idx": idx,                                      //分段音频的次序 
-      "compress": "2"
-    },
-    "spec": {
-      "vad_max_sec": showdata.vad_max_sec || "20",                    //默认30s, 说话最大时长 
-      "vad_pause_sec": showdata.vad_pause_sec || "3",                 //默认5s, 说话后静音停止时间 
-      "vad_st_sil_sec": showdata.vad_st_sil_sec || "8.0",               //默认为10s, 说话前最大静音时长 
-      "long_speech": showdata.long_speech || "",
-      "extra": {}                                       //扩展字段，可有可无，方便后续扩展
-    },
-    "audio": newbyteLength1                             //音频字节流,需要转为二进制流
-  })
-
-  console.log('sendstr-=-=-=-=-', sendstr)
   return sendstr
 }
 
@@ -223,7 +219,6 @@ module.exports = {
   bufferToStr: bufferToStr,
   concatenate: concatenate,
   getDataList: getDataList,
-  getDataList1: getDataList1,
   _arrayBufferToBase64: _arrayBufferToBase64,
   joinParams: joinParams
 
