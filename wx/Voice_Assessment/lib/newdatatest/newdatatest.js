@@ -46,7 +46,8 @@ let showdata = {
   showboolean: false, // 未点击中文英文 按钮的时候 关于 socket按钮 隐藏
   pagetitle: '语音页面',
   originUrl: '', // 原音路径
-  initAiData : {} // 存放操作底层AI数据
+  initAiData : {}, // 存放操作底层AI数据
+  identifyFnl: ''
 }
 
 
@@ -67,6 +68,7 @@ function showtest(event, initData, accessModeData, showinitAidata) {
   //  更新传递参数文本话术
   // 缺少当前文本播放音频
   let postdata = event.data.postList;
+  console.log('postdata', postdata)
   newCeping = initData.ceping
   if (initData.ceping === '1' || initData.ceping === '2') {
 
@@ -74,10 +76,12 @@ function showtest(event, initData, accessModeData, showinitAidata) {
     postdata.showassess_ref = initData.cpinfo;
     postdata.originUrl = initData.cpluyinurl;
     getApp().globalData.cpluyinurl = initData.cpluyinurl;
+    postdata.ifiMG= true
     console.log('postdata.showassess_ref', postdata.showassess_ref)
 
   } else if (initData.ceping === '3' || initData.ceping === '4') {
-    postdata.pagetitle = '语音测评'
+    postdata.pagetitle = '测评页面'
+    postdata.ifiMG = false
   }
 
   postdata.initAiData = showinitAidata;
@@ -368,7 +372,7 @@ function clickRecording(event) {
   })
 
   // 初始化相关变量
-  newdata.recordImg = '/images/stop-voice.png',
+    newdata.recordImg = '/images/stop-voice.png',
     newdata.recordText = '结束录音',
     event.setData({
       postList: newdata
@@ -428,12 +432,12 @@ function clickRecording(event) {
     // 正常发包idx 数字累加 最后一包为负值
     newidx = res.isLastFrame ? '-' + (parseInt(newidx) + 1).toString() : (parseInt(newidx) + 1).toString()
     console.log('shikexin-idx----', newidx)
-    let sendstr = util.getDataList1(randomNum, newdata.showassess_ref, newidx, newnewbyteLength1, newdata.initAiData);
+    let sendstr = util.getDataList(randomNum, newdata.showassess_ref, newidx, newnewbyteLength1, newdata.initAiData, newCeping);
     // console.log('封装会来的数据数据包', sendstr);
     //拼装数据进行传输
     pushSoecket(sendstr);
     //socket 回调
-    websocketCallBack();
+    websocketCallBack(event);
   })
   recorderManager.start(showdata.options)
 }
@@ -471,7 +475,8 @@ function pushSoecket(postdata) {
  * 这个可以单独拿出来
  * 
  */
-function websocketCallBack() {
+function websocketCallBack(event) {
+  console.log('event----', event)
   //socket 回调
   wx.onSocketMessage((res) => {
    
@@ -546,17 +551,14 @@ function websocketCallBack() {
         closeRecording()
         // 得分遮罩
         console.log('getApp().globalData.testResult', getApp().globalData.testResult)
-        // return
-        wx.showToast({
-          title: '您的评分' + (newdata.spec.evl_scores.total_score).toString() + '分',
-          icon: 'success',
-          duration: 5000,
-          success: function () {
-            wx.navigateTo({
-              url: '../../lib/followResult/followResult',
-            })
-            // me.socket.close()
-          }
+        // wx.navigateTo({
+        //   url: '../../lib/followResult/followResult',
+        // })
+        console.log('newdata.spec', newdata.spec)
+        let postData =  event.data.postList;
+        postData.identifyFnl = newdata.spec.nbest
+        event.setData({
+          postList: postData
         })
       } 
     }
