@@ -1,6 +1,6 @@
 
 快速接入</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; QuickAccess(app_key)</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; QuickAccess(appkey)</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @构造对象</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @appkey &nbsp;&nbsp;  由 https://ai.xueersi.com/ 登录获取，必填</br>
 ```
@@ -18,7 +18,7 @@ res=qa.play("https://mr.xesimg.com/home/2019/05/25/1558782271216292016511.jpg",'
 print(res)
 ```
 安全接入</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SafeAccess(app_key,app_secret)</br> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SafeAccess(appkey,appsecret)</br> 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @构造对象</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @appkey &nbsp;&nbsp; 由 https://ai.xueersi.com/ 登录获取，必填</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @appsecret &nbsp;&nbsp; 由 https://ai.xueersi.com/ 登录获取，必填</br>
