@@ -129,7 +129,6 @@
 				}
 			}
 		});
-
 		// 1是英文测评 2是中文测评  3中文识别  4英文识别
 		function showcontent(data){
 			switch (data) {
@@ -141,9 +140,11 @@
 					break;
 				case 'Distinguishzh':
 					changeShape = '3'
+					break;
 				case 'Distinguishen':
 					changeShape = '4'
 					break;
+					
 			}
 			$(".operation").show()
 			showitem();
@@ -168,9 +169,8 @@
 			if (process.state == 1) return;
 			process.state = 1
 			var params = {}
-			var webscoketURL = function (url, id){
+			var webscoketURL = function (url){
 				params.webscoketURL=url
-				params.pid=id;
 			}
 			var world = $('#textHtml').text()
 			console.log('params.ise_word', world)
@@ -205,19 +205,19 @@
 			}
 			switch (changeShape) {
 				case '1':
-					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/evl/en?app_key=8102b22a5e81e840176d9f381ec6f837", "1103101")
+					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/evl/en?app_key=8102b22a5e81e840176d9f381ec6f837")
 					break;
 				case '2':
 					// 中文
-					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/evl/zh?app_key=8102b22a5e81e840176d9f381ec6f837", "1103103")
+					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/evl/zh?app_key=8102b22a5e81e840176d9f381ec6f837")
 					break;
 				case '3':
 					// 中文
-					webscoketURL("ws://192.168.34.145:18092/v1/api/speech/asr/zh?app_key=8102b22a5e81e840176d9f381ec6f837", "")
+					webscoketURL("ws://192.168.34.145:18092/v1/api/speech/asr/zh?app_key=8102b22a5e81e840176d9f381ec6f837")
 					break;
 				case '4':
 					// 英文
-					webscoketURL("ws://192.168.34.145:18092/v1/api/speech/asr/en?app_key=8102b22a5e81e840176d9f381ec6f837", "")
+					webscoketURL("ws://192.168.34.145:18092/v1/api/speech/asr/en?app_key=8102b22a5e81e840176d9f381ec6f837")
 					break;
 			}
 			session.start(params)
