@@ -2,7 +2,7 @@
 快速接入</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; QuickAccess(app_key)</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @构造对象</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @app_key &nbsp;&nbsp;  由 https://ai.xueersi.com/ 登录获取，必填</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @appkey &nbsp;&nbsp;  由 https://ai.xueersi.com/ 登录获取，必填</br>
 ```
 qa=QuickAccess("03f7634cfca98ea99e25e175cd42bc7aece1203c")
 ```
@@ -20,8 +20,8 @@ print(res)
 安全接入</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SafeAccess(app_key,app_secret)</br> 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @构造对象</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @app_key &nbsp;&nbsp; 由 https://ai.xueersi.com/ 登录获取，必填</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @app_secret &nbsp;&nbsp; 由 https://ai.xueersi.com/ 登录获取，必填</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @appkey &nbsp;&nbsp; 由 https://ai.xueersi.com/ 登录获取，必填</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; @appsecret &nbsp;&nbsp; 由 https://ai.xueersi.com/ 登录获取，必填</br>
 ```
 sa=SafeAccess("03f7634cfca98ea99e25e175cd42bc7aece1203c","7d96a4e9fa3587d803a295f05f34c2ccbd5763d6af0d7e025d03e4220e7facbe")
 ```
