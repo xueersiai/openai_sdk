@@ -98,7 +98,7 @@
 			},
 			// 音量太小提示
 			low : function () {
-
+				console.log('音量过小')
 			}
 		}
 		var session = new XueASR({
@@ -220,6 +220,7 @@
 					webscoketURL("ws://192.168.34.145:18092/v1/api/speech/asr/en?app_key=8102b22a5e81e840176d9f381ec6f837")
 					break;
 			}
+			console.log('params', params)
 			session.start(params)
 		}
 
