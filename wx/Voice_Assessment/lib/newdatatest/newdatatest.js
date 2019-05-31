@@ -30,7 +30,7 @@ let showdata = {
   recordImg: '/images/record-voice.png',
   recordText: '点击开始录音',
   // 我的读音按钮
-  // myvoiceImg: '/images/myvoice.png',
+  myvoiceImg1: '/images/myvoice.png',
   myvoiceImg: '/images/noPlay.png',
   options: {
     duration: 600000, // 最大十分钟
@@ -47,7 +47,8 @@ let showdata = {
   pagetitle: '语音页面',
   originUrl: '', // 原音路径
   initAiData : {}, // 存放操作底层AI数据
-  identifyFnl: ''
+  identifyFnl: '',
+  showmyimg:false, // 我的读音
 }
 
 
@@ -83,9 +84,9 @@ function showtest(event, initData, accessModeData, showinitAidata) {
     postdata.pagetitle = '识别页面'
     postdata.ifiMG = false
   }
-
+  postdata.identifyFnl = '';
   postdata.initAiData = showinitAidata;
-
+  postdata.showmyimg = false;
   event.setData({
     postList: postdata
   })
@@ -286,6 +287,21 @@ function linkSocket(socketurl) {
 
 /**
  * by 石可心
+ * 播放我的录音
+ * 
+ */
+function bindMinePlay (event) {
+  console.log('getApp().globalData.myRecording', getApp().globalData.myRecording)
+  var innerAudioContext = wx.createInnerAudioContext();
+  innerAudioContext.src = getApp().globalData.myRecording //这里可以是录音的临时路径
+  innerAudioContext.play()
+  innerAudioContext.onError((res) => {
+    // 播放音频失败的回调
+  })
+
+}
+/**
+ * by 石可心
  * 播放录音
  * 
  */
@@ -366,7 +382,6 @@ function clickRecording(event) {
   let systemtype = '';
   wx.getSystemInfo({
     success: function (res) {
-      console.log('res-shikexin', res)
       systemtype = res.platform
     }
   })
@@ -401,8 +416,9 @@ function clickRecording(event) {
     // 改变data 
     getApp().globalData.myRecording = tempFilePath
     console.log(getApp().globalData.myRecording)
-    newdata.recordImg = '/images/record-voice.png',
-      newdata.recordText = '点击开始录音',
+    newdata.recordImg = '/images/record-voice.png';
+    newdata.showmyimg = true;
+    newdata.recordText = '点击开始录音';
       event.setData({
         postList: newdata
       })
@@ -411,7 +427,7 @@ function clickRecording(event) {
   console.log('newdata', newdata)
   // ！！! 录音重点分片式录音发送，根据分片每一片的大小来进行反复调用，直到设定事件结束或者手动结束
   recorderManager.onFrameRecorded((res) => {
-    console.log('石可心返回音频',res)
+    // console.log('石可心返回音频',res)
     const {
       frameBuffer
     } = res;
@@ -433,7 +449,7 @@ function clickRecording(event) {
     newidx = res.isLastFrame ? '-' + (parseInt(newidx) + 1).toString() : (parseInt(newidx) + 1).toString()
     console.log('shikexin-idx----', newidx)
     let sendstr = util.getDataList(randomNum, newdata.showassess_ref, newidx, newnewbyteLength1, newdata.initAiData, newCeping);
-    // console.log('封装会来的数据数据包', sendstr);
+    console.log('封装会来的数据数据包', sendstr);
     //拼装数据进行传输
     pushSoecket(sendstr);
     //socket 回调
@@ -588,5 +604,6 @@ module.exports = {
   showdata: showdata,
   playRecording: playRecording,
   linkSocket: linkSocket,
-  clickRecording: clickRecording
+  clickRecording: clickRecording,
+  bindMinePlay: bindMinePlay
 }
