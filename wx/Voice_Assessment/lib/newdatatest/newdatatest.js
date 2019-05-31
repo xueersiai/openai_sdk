@@ -80,7 +80,7 @@ function showtest(event, initData, accessModeData, showinitAidata) {
     console.log('postdata.showassess_ref', postdata.showassess_ref)
 
   } else if (initData.ceping === '3' || initData.ceping === '4') {
-    postdata.pagetitle = '测评页面'
+    postdata.pagetitle = '识别页面'
     postdata.ifiMG = false
   }
 
