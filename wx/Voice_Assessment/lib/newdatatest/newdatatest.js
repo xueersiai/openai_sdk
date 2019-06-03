@@ -1,6 +1,6 @@
 /**
  * 语音封装包裹第一版，   名称：二把刀
- * by：石可心
+ * by：石可心 and 张鹏瑾
  * wx: Skx1234567890
  * 注：请使用小程序开发真机调试  
  * 小程序开发版本： v1.02.1904090
@@ -97,9 +97,9 @@ function showtest(event, initData, accessModeData, showinitAidata) {
    * 循环当前文本使用场景
    * 1---英文测评
    * 2---中文测评
-   * 
+   * 3---中文识别
+   * 4---英文识别
    * 参数1 测评文本  initData
-   * 
    * 
    */
   switch (initData.ceping) {

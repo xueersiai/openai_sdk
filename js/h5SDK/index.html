@@ -26,7 +26,7 @@
 				结果：
 				<span id="result"></span>
 			</div>
-			<div>
+			<div id="errorinfo" style="display: none">
 				错误：
 				<span id="error" style="color:red;"></span>
 			</div>
@@ -94,6 +94,7 @@
 			error : function (err) {
 				process.state = 5
 				console.log('err', err)
+				$('#errorinfo').show()
 				$("#error").html(err);
 			},
 			// 音量太小提示
@@ -146,6 +147,8 @@
 					break;
 					
 			}
+			$("#error").text('');
+			$("#errorinfo").hide();
 			$(".operation").show()
 			showitem();
 		}
