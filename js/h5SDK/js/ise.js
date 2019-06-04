@@ -246,7 +246,6 @@ var XueASR = (function (window, navigator) {
 			}
            	// 当lastblob为true，将idx置为-
             if (lastBlob) {
-            	console.log("停止录制音频");
             	// 当idx是数字，置为负，否则返回
             	if (parseInt(idx) > 0) {
 	                idx='-'+idx;
@@ -255,7 +254,6 @@ var XueASR = (function (window, navigator) {
             		recording = false;
             		return;
 				}
-				Wclose = true
 			}
 			// 已合够规定包数，进行发包
 			bufferToString = utils.arrayBufferToBase64(data)
@@ -601,6 +599,7 @@ var XueASR = (function (window, navigator) {
 		},
 		'callOnResult': function (result, wrapArray){
 			if(result.data.spec.evl_flag === "fnl") { // 结束
+				Wclose = true
 				if(wrapArray.length > 0){
 					return callback.onResult(wrapArray)
 				} else {
