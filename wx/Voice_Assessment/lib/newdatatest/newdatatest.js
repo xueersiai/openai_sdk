@@ -177,9 +177,9 @@ function testGoShiBie(accessModeData, tag) {
   let socketurl
   console.log('tag', tag)
   if (tag === '3') {
-    socketurl = 'ws://192.168.34.145:18092/v1/api/speech/asr/zh' + geturl
+    socketurl = 'ws://openapiai.xueersi.com/v1/api/speech/asr/zh' + geturl
   } else if (tag === '4') {
-    socketurl = 'ws://192.168.34.145:18092/v1/api/speech/asr/en' + geturl
+    socketurl = 'ws://openapiai.xueersi.com/v1/api/speech/asr/en' + geturl
   }
   console.log('socketurl-----', socketurl)
   // 链接当前socket 
