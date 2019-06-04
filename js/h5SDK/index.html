@@ -5,29 +5,39 @@
 	<title>Document</title>
 </head>
 <body>
-	<button id="start">开始</button>
-	<button id="end">结束</button>
-	<div>
-		<div class="showflag">提示语： <p id="textHtml"></p></div>
+	<div class="title-box" style="margin-top:30px">
+		<button id="Evaluationzh" onclick="showcontent('Evaluationzh')">  测评中文 </button>
+		<button id="Evaluationen" onclick="showcontent('Evaluationen')">  测评英文 </button>
+		<button id="Distinguishzh" onclick="showcontent('Distinguishzh')">  识别中文 </button>
+		<button id="Distinguishen" onclick="showcontent('Distinguishen')">  识别英文 </button>
+	</div>	
+	
+
+	<div class="operation" style="display:none;margin-top:30px">
+		<button id="start" onclick="showstart()">开始</button>
+		<button id="end">结束</button>
 		<div>
-			音量：
-			<span id="volume"></span>
-		</div>
-		<div>
-			结果：
-			<span id="result"></span>
-		</div>
-		<div>
-			错误：
-			<span id="error" style="color:red;"></span>
-		</div>
-		<div class="showflag">
-			原音
-			<audio src="" id="audioOrigin" controls></audio>
-		</div>
-		<div>
-			音频
-			<audio src="" id="audio" controls></audio>
+			<div class="showflag">提示语： <p id="textHtml"></p></div>
+			<div>
+				音量：
+				<span id="volume"></span>
+			</div>
+			<div>
+				结果：
+				<span id="result"></span>
+			</div>
+			<div id="errorinfo" style="display: none">
+				错误：
+				<span id="error" style="color:red;"></span>
+			</div>
+			<div class="showflag">
+				原音
+				<audio src="" id="audioOrigin" controls></audio>
+			</div>
+			<div>
+				音频
+				<audio src="" id="audio" controls></audio>
+			</div>
 		</div>
 	</div>
 	<script type="text/javascript" src="js/jquery.min.js"></script>
@@ -35,11 +45,10 @@
 	<script type="text/javascript">
 		
 		// 用来切换测评中英文 1是英文 2是中文  3是识别
-		var changeShape = '3'
+		var changeShape = '1'
 		//单句测评与多句测评模式选项，多句测评模式置为1 单句测评为0
 		var multiSentLoop = '0'
-
-
+		
 		/**
 		 * 录音状态
 		 * 0:初始化 1：点击开始 2：录音中 3：点击停止 4：返回正常结果 5：返回错误
@@ -47,6 +56,7 @@
 		var process = {
 			'state' : 0
 		}
+
 
 		// 回调事件	
 		var on = {
@@ -84,11 +94,12 @@
 			error : function (err) {
 				process.state = 5
 				console.log('err', err)
+				$('#errorinfo').show()
 				$("#error").html(err);
 			},
 			// 音量太小提示
 			low : function () {
-
+				console.log('音量过小')
 			}
 		}
 		var session = new XueASR({
@@ -119,28 +130,50 @@
 				}
 			}
 		});
-		// 判断测评的中英文的文字展示
-		if(changeShape === '1') {
-			$('#textHtml').html('Whatever is worth doing is worth doing well.')
-			$('#audioOrigin').attr('src', './en.mp3')
-		} else if(changeShape === '2'){
-			$('#textHtml').html('任何值得做的 | 就把它做好')
-			$('#audioOrigin').attr('src', './zh.mp3')
-		} else if (changeShape === '3' || changeShape === '4'){
-			$('.showflag').hide()
-		} 
-
-		// 传递url
-		
+		// 1是英文测评 2是中文测评  3中文识别  4英文识别
+		function showcontent(data){
+			switch (data) {
+				case 'Evaluationen':
+					changeShape = '1'
+					break;
+				case 'Evaluationzh':
+					changeShape = '2'
+					break;
+				case 'Distinguishzh':
+					changeShape = '3'
+					break;
+				case 'Distinguishen':
+					changeShape = '4'
+					break;
+					
+			}
+			$("#error").text('');
+			$("#errorinfo").hide();
+			$(".operation").show()
+			showitem();
+		}
+		function showitem () {
+			if(changeShape === '1') {
+				$('.showflag').show()
+				$('#textHtml').html('Whatever is worth doing is worth doing well.')
+				$('#audioOrigin').attr('src', './en.mp3')
+			} else if(changeShape === '2'){
+				$('.showflag').show()
+				$('#textHtml').html('任何值得做的 | 就把它做好')
+				$('#audioOrigin').attr('src', './zh.mp3')
+			} else if (changeShape === '3' || changeShape === '4'){
+				$('.showflag').hide()
+			} 
+		}
 		// 当点击了开始
-		$("#start").click(function(){
+		function showstart(){
+			// 判断测评的中英文的文字展示
 			// 不能重复点击
 			if (process.state == 1) return;
 			process.state = 1
 			var params = {}
-			var webscoketURL = function (url, id){
+			var webscoketURL = function (url){
 				params.webscoketURL=url
-				params.pid=id;
 			}
 			var world = $('#textHtml').text()
 			console.log('params.ise_word', world)
@@ -173,30 +206,26 @@
 					"long_speech": '1'
 				}
 			}
-			
-
 			switch (changeShape) {
 				case '1':
-					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/evl/en?app_key=8102b22a5e81e840176d9f381ec6f837", "1103101")
+					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/evl/en?app_key=8102b22a5e81e840176d9f381ec6f837")
 					break;
 				case '2':
 					// 中文
-					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/evl/zh?app_key=8102b22a5e81e840176d9f381ec6f837", "1103103")
+					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/evl/zh?app_key=8102b22a5e81e840176d9f381ec6f837")
 					break;
 				case '3':
 					// 中文
-					webscoketURL("ws://192.168.34.145:18092/v1/api/speech/asr/zh?app_key=8102b22a5e81e840176d9f381ec6f837", "")
+					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/asr/zh?app_key=8102b22a5e81e840176d9f381ec6f837")
 					break;
 				case '4':
 					// 英文
-					webscoketURL("ws://192.168.34.145:18092/v1/api/speech/asr/en?app_key=8102b22a5e81e840176d9f381ec6f837", "")
+					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/asr/en?app_key=8102b22a5e81e840176d9f381ec6f837")
 					break;
 			}
-
-
+			console.log('params', params)
 			session.start(params)
-
-		})
+		}
 
 		// 点击了结束
 		$("#end").click(function(){

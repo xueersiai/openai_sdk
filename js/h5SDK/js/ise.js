@@ -1,5 +1,5 @@
 /**
- created by wudan
+ created by mujin & skx
  **/
 /*
 流程:
@@ -26,6 +26,9 @@ var XueASR = (function (window, navigator) {
 	var recordWorkerPath = '../../js/check-volume.js';
 	var encodeWorkerPath = '../../js/worker-realtime.js';
 	
+	// 按钮切换到时候，停止webocket的
+	var Wclose = false 
+
     // 随机获取sid
     var getSID = function () {
     	var s = [];
@@ -243,7 +246,6 @@ var XueASR = (function (window, navigator) {
 			}
            	// 当lastblob为true，将idx置为-
             if (lastBlob) {
-            	console.log("停止录制音频");
             	// 当idx是数字，置为负，否则返回
             	if (parseInt(idx) > 0) {
 	                idx='-'+idx;
@@ -251,7 +253,7 @@ var XueASR = (function (window, navigator) {
             	} else {
             		recording = false;
             		return;
-            	}
+				}
 			}
 			// 已合够规定包数，进行发包
 			bufferToString = utils.arrayBufferToBase64(data)
@@ -278,6 +280,7 @@ var XueASR = (function (window, navigator) {
 			}  
 			sendRecord();
 			
+			
 		}
 		// 开始录音
 		var start = function () {
@@ -285,6 +288,7 @@ var XueASR = (function (window, navigator) {
 			if('undefined' == typeof (websocket) || websocket.readyState != 1){
 				websocketOvertime = true;
 				// 线上
+				console.log('%casrParam.webscoketURL', 'color:orange', asrParam.webscoketURL)
 				websocket = new WebSocket(asrParam.webscoketURL);
 				// 客户端与服务端连接成功后触发
 				websocket.onopen = websocketMethod.onopen;
@@ -309,13 +313,16 @@ var XueASR = (function (window, navigator) {
 		}
 		// 停止录音方法
 		var stop = function () {
+
 			// 停止
 			if (source) source.disconnect();
-            if (processor) processor.disconnect();
+			if (processor) processor.disconnect();
+			
 		}
 		// 停止保存当前音频
 		var pause = function () {
 			lastBlob = true;
+			
 		}
 		// 发送录制的音频
 		var sendRecord = function () {
@@ -439,6 +446,7 @@ var XueASR = (function (window, navigator) {
     			fileState[index]='true';
     		}
 			console.log('-result---', result.data)
+
 			if(asrParam.spec.multi_sent_loop === '0'){
 				utils.callOnResult(result, [result.data])
 			}else if(asrParam.spec.multi_sent_loop === '1'){
@@ -449,6 +457,10 @@ var XueASR = (function (window, navigator) {
 				}
 			} else {
 				utils.callOnResult(result, [result.data])
+			}
+			if (lastBlob && Wclose) {
+				console.log('websocket--------', websocket)
+				websocketMethod.onclose()
 			}
 		}
 
@@ -587,6 +599,7 @@ var XueASR = (function (window, navigator) {
 		},
 		'callOnResult': function (result, wrapArray){
 			if(result.data.spec.evl_flag === "fnl") { // 结束
+				Wclose = true
 				if(wrapArray.length > 0){
 					return callback.onResult(wrapArray)
 				} else {
@@ -641,6 +654,7 @@ var XueASR = (function (window, navigator) {
 
 		// 开始
         this.start = function (params_obj) {
+			Wclose = false 
         	// 回调状态
         	callback.onProcess('onStart')
         	// 合并变量

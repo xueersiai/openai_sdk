@@ -18,7 +18,7 @@
       <text>{{recordText}}</text>
     </view>
     <view class="mine">
-      <image class="myvoice" bindtap="bindMinePlay" src="{{myvoiceImg}}"></image>
+      <image class="myvoice" bindtap="bindMinePlay" src="{{ showmyimg ? myvoiceImg1 : myvoiceImg}}"></image>
       <text>我的读音</text>
     </view>
   </view>

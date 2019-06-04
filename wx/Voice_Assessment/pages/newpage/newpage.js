@@ -28,11 +28,17 @@ Page({
     sdkdemo.clickRecording(this)  //  唤起接口
   },
   /**
+   * 点击我的录音
+   */
+  bindMinePlay: function () {
+    sdkdemo.bindMinePlay(this)
+  },
+  /**
  * 生命周期函数--监听页面加载
  */
   onLoad: function (options) {
     // type：String 1 英文 2 中文 3 中文识别 4 英文识别 
-    let ceping = '4'        
+    let ceping = '3'        
     // 测评对照阅读的文本    英文例句  Whatever is worth doing is worth doing well.
     let cpinfo = 'Whatever is worth doing is worth doing well'  
     // 测评参考录音       英文例句地址    http://111.206.170.217:12001/ai/audios/Example-en.mp3
