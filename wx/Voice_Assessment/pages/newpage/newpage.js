@@ -28,13 +28,19 @@ Page({
     sdkdemo.clickRecording(this)  //  唤起接口
   },
   /**
+   * 点击我的录音
+   */
+  bindMinePlay: function () {
+    sdkdemo.bindMinePlay(this)
+  },
+  /**
  * 生命周期函数--监听页面加载
  */
   onLoad: function (options) {
-    // 1 英文 2 中文
-    let ceping = 2        
+    // type：String 1 英文 2 中文 3 中文识别 4 英文识别 
+    let ceping = '3'        
     // 测评对照阅读的文本    英文例句  Whatever is worth doing is worth doing well.
-    let cpinfo = '任何值得做的，就把它做好'  
+    let cpinfo = 'Whatever is worth doing is worth doing well'  
     // 测评参考录音       英文例句地址    http://111.206.170.217:12001/ai/audios/Example-en.mp3
     let cpluyinurl = 'http://111.206.170.217:12001/ai/audios/Example-zh.mp3'
     //接入方式 1快速接入  2安全接入
@@ -45,7 +51,7 @@ Page({
     let app_secret = 'f308ce31e42e366093c01e5283f1acc02c2cd47492f5c8633b55d58930be2b2c'
 
     //默认30s, 最大说话时长，最大可设置90s 
-    let vad_max_sec = '90';
+    let vad_max_sec = (ceping === '3' || ceping === '4') ? '20' : '90';
     // 默认5s, 说话后静音停止时间
     let vad_pause_sec = '3';
     //默认为10s, 说话前最大静音时长
@@ -56,6 +62,8 @@ Page({
     let voiceless_penal = '1';
     //单句测评与多句测评模式选项，多句测评模式置为1 单句测评为0
     let multi_sent_loop = '0';
+    // 识别中的长语音设定 
+    var long_speech = '1'
 
     //  初始化数据 
     let initData = {
@@ -73,9 +81,19 @@ Page({
       "vad_max_sec": vad_max_sec,
       "vad_pause_sec": vad_pause_sec,
       "vad_st_sil_sec": vad_st_sil_sec,
-      "sil_tips_sec": sil_tips_sec,
-      "voiceless_penal": voiceless_penal,
-      "multi_sent_loop": multi_sent_loop
+    }
+    // 如果是测评的话，会多加几个参数
+    if (ceping === '1' || ceping === '2') {
+      initAiData = Object.assign(initAiData, {
+        "sil_tips_sec": sil_tips_sec,
+        "voiceless_penal": voiceless_penal,
+        "multi_sent_loop": multi_sent_loop
+
+      })
+    } else if (ceping === '3' || ceping === '4') {
+      initAiData = Object.assign(initAiData, {
+        "long_speech": long_speech
+      })
     }
     sdkdemo.showtest(this, initData, accessModeData, initAiData)
   },

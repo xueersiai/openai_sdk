@@ -90,6 +90,7 @@ page {
 .native {
   margin-top: 80rpx;
   margin-right: 60rpx;
+  width:90rpx;
 }
 .native .native-voice {
   width: 84rpx;
@@ -129,5 +130,23 @@ page {
   font-family: PingFangSC-Regular;
   font-weight: 400;
   color:#999999;
+  text-align: center;
+}
+.identify{
+  margin-top:30rpx;
+}
+.identify .tit{
+  display: block;
+  margin-top:30rpx;
+  font-size: 30rpx;
+  color:#999;
+  font-family: PingFangSC-Regular;
+}
+.identify text{
+  display: block;
+  font-size: 40rpx;
+  font-family: PingFangSC-Regular;
+  font-weight: 400;
+  color:#333;
   text-align: center;
 }

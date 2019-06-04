@@ -7,8 +7,10 @@
   </view>
   <view class="voice-buttons">
     <view class="native">
+     <view wx-if="{{ifiMG}}">
       <image class="native-voice" bindtap="bindNative" data-showaa="nimei" src="{{nativeVoiceImg}}"></image>
       <text>{{nativeText}}</text>
+     </view>
     </view>
     <!-- 录音按钮 -->
     <view class="record">
@@ -16,9 +18,17 @@
       <text>{{recordText}}</text>
     </view>
     <view class="mine">
-      <image class="myvoice" bindtap="bindMinePlay" src="{{myvoiceImg}}"></image>
+      <image class="myvoice" bindtap="bindMinePlay" src="{{ showmyimg ? myvoiceImg1 : myvoiceImg}}"></image>
       <text>我的读音</text>
     </view>
+  </view>
+  <view class="identify" wx-if="{{!ifiMG}}">
+    <view class="tit">
+    识别结果:
+    </view>
+    <text>
+    {{identifyFnl}}
+    </text>
   </view>
 
   <!-- <view class="vocabularyview">

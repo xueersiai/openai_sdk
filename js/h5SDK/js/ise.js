@@ -1,44 +1,18 @@
 /**
- created by wudan
+ created by mujin & skx
  **/
- /*
+/*
 流程:
 1.点击开始
 this.start-> iseEvent.start->1.recorderMethod.start->连接websocket
 								 ->2.initmedia(初始化录音方法)->gotStream（采集音频）->complete（编码音频）->websocket.send(发送数据)
 2.点击结束
 this.stop->iseEvent.stop->iseEvent.stopRecord->recorderMethod.pause->1.lastblob=true,发送最后一包->websocket.onmessage(处理结果)
-                                                                        ->2.5s 后检测重发 checkrepeat->resend->ajax(处理结果)
-3.点击重发
-this.resend->recorderMethod.resend->ajax resend(处理结果)
  */
 
 var XueASR = (function (window, navigator) {
 	// 测评需要变量
-	var asrParam = {
-		// websocket 地址
-		"webscoketURL" : "",
-		// 测评文本
-		"text" : "",
-		// pid
-		"pid" : "",
-		// 重发地址
-		"resendURL" : "",
-		// 试题id
-		"testid" : "0",
-		// 直播id
-		"liveid" : "0",
-		// 学生id
-		"stuid" : "0",
-		// 音频持续时间
-		"audioTime" : '',
-		// 用户浏览器信息，测评一般只支持谷歌/火狐浏览器
-		"userAgent" : navigator.userAgent,
-		// 是否重发
-		"resend" : '',
-		// 重发检测间隔
-		"resendInterval" : ''
- 	}
+	var asrParam = {}
 	// sid 每条语音唯一标识
 	var sid = "";
 	// websocket是否超时
@@ -52,6 +26,9 @@ var XueASR = (function (window, navigator) {
 	var recordWorkerPath = '../../js/check-volume.js';
 	var encodeWorkerPath = '../../js/worker-realtime.js';
 	
+	// 按钮切换到时候，停止webocket的
+	var Wclose = false 
+
     // 随机获取sid
     var getSID = function () {
     	var s = [];
@@ -64,7 +41,7 @@ var XueASR = (function (window, navigator) {
         s[8] = s[13] = s[18] = s[23] = "-";
         var uuid = s.join("");
         var Timestamp=new Date().getTime();
-        uuid=uuid+"_"+stuid+'_'+Timestamp;
+        uuid=uuid+"_"+3+'_'+Timestamp;
         return uuid;
     }
 
@@ -128,7 +105,6 @@ var XueASR = (function (window, navigator) {
 			case 'end':
 				// console.log('e.data', e.data);
 				recorderMethod.lastBUffer(e.data.buf)
-				console.log('e.data.buf', e.data.buf)
 				var dataStr = e.data.buf
 
 				var koko = flatten(dataStr)
@@ -142,7 +118,6 @@ var XueASR = (function (window, navigator) {
 	      }
 		};
 		
-
         // 初始化
         var init = function (sampleRate) {
             encodeMp3worker.postMessage({
@@ -218,12 +193,8 @@ var XueASR = (function (window, navigator) {
 		var	recorderFile;
 		// 当前发送内容
 		var	sendFile;
-		// 将发送的标识数据转化为blob后的文件
-		var	strblob;
 		// 发送的标识数据
 		var	sendstr = '';
-		// 是否点击过开始
-		var	firstClick = false;
 		// 是否是当前文本的最后一个数据包
 		var	lastBlob = false;
 		// 当次录音是否结束
@@ -246,24 +217,12 @@ var XueASR = (function (window, navigator) {
     	var recordScriptNode = '';
 		// 正在录音标志
 		var	recording = false;
-		// 发送最后一个信息包的标志位
-		var sendLastMes = false;
-		// 重发定时器返回id
-		var resendId = '';
-		// 重发是否成功标识
-		var resendSuccess = false;
-		// 是否重发当前数据
-		var	repeat = false;
 		// 存储原始音频数据
 		var	fileList = [];	    
 	    // 存储AudioContext对象
 	    var audioCtx = null;
-	    // 是否是302错误。302表示长静音，业务会单独处理，不标记为错误。
-		var	error_302 = false;
 		// 当前发送所有数据是否得到返回结果
 		var	success = false;
-		// 检查是否重发定时器ID
-		var	repeatId = "";
 		// 所有发送数据是否得到返回值的标记数组
 		var	fileState = ['true'];
 		var bufferToString;
@@ -274,7 +233,6 @@ var XueASR = (function (window, navigator) {
 			recorderFile = new Blob(data, {"type": "audio/mp3"});
 			// 保存所有音频数据到mp3Blob			
 			mp3Blob = new Blob([mp3Blob, recorderFile]);
-			console.log('mp3Blob-', data, mp3Blob)
 		}
 
     	// 接收到编码为MP3的数据后发送
@@ -288,21 +246,16 @@ var XueASR = (function (window, navigator) {
 			}
            	// 当lastblob为true，将idx置为-
             if (lastBlob) {
-            	console.log("停止录制音频");
             	// 当idx是数字，置为负，否则返回
             	if (parseInt(idx) > 0) {
-            		console.log("lastBlob2");
 	                idx='-'+idx;
 	                recording = false;
-	                sendLastMes = true;
             	} else {
             		recording = false;
-            		console.log("lastBlob3");
             		return;
-            	}
+				}
 			}
-			console.log('传进来的文案',  asrParam.text)
-            // 已合够规定包数，进行发包
+			// 已合够规定包数，进行发包
 			bufferToString = utils.arrayBufferToBase64(data)
 			sendstr = {
 				"common": {
@@ -310,28 +263,10 @@ var XueASR = (function (window, navigator) {
 					"idx": idx,
 					"compress": "2"
 				},
-				"spec": {
-					"assess_ref": asrParam.text,
-					"vad_max_sec": "15",
-
-					"vad_pause_sec": "3",
-			
-					"vad_st_sil_sec": "5",
-			
-					"sil_tips_sec": "200",
-			
-					"voiceless_penal": "1",
-			
-					"multi_sent_loop": asrParam.multi_sent_loop,
-			
-					"need_out_wd_sec": "0",
-					"extra":{
-						"testid":asrParam.testid,
-						"liveid":asrParam.liveid
-					}
-				},
+				"spec": asrParam.spec,
 				"audio": bufferToString
 			}
+			console.log('sendstr', sendstr)
 			sendFile = JSON.stringify(sendstr)
 			fileList.push(data);
 			data = '';
@@ -345,6 +280,7 @@ var XueASR = (function (window, navigator) {
 			}  
 			sendRecord();
 			
+			
 		}
 		// 开始录音
 		var start = function () {
@@ -352,6 +288,7 @@ var XueASR = (function (window, navigator) {
 			if('undefined' == typeof (websocket) || websocket.readyState != 1){
 				websocketOvertime = true;
 				// 线上
+				console.log('%casrParam.webscoketURL', 'color:orange', asrParam.webscoketURL)
 				websocket = new WebSocket(asrParam.webscoketURL);
 				// 客户端与服务端连接成功后触发
 				websocket.onopen = websocketMethod.onopen;
@@ -369,57 +306,23 @@ var XueASR = (function (window, navigator) {
 			fileState = ["true"];
 			idx = "1";
 			fileList = [];
-			error_302 = false;
 			recording  =  true;
 			lastBlob = false;
-			repeat = false;
-			sendLastMes = false;
 			firstClick = false;
 			finish = false;
-			asrParam.audioTime = 0;
 		}
 		// 停止录音方法
 		var stop = function () {
+
 			// 停止
 			if (source) source.disconnect();
-            if (processor) processor.disconnect();
+			if (processor) processor.disconnect();
+			
 		}
 		// 停止保存当前音频
 		var pause = function () {
 			lastBlob = true;
-			// 当重发标志位为false时，检测是否重发
-			if (!repeat && asrParam.resend) {
-				// 检测是否重发
-				repeatId = setTimeout(checkrepeat, asrParam.resendInterval);	
-			}
-		}
-		// 检查是否重发
-		var checkrepeat = function () {
-			// 302不重发
-			if (error_302) {
-				clearInterval(repeatId);
-				return ;
-			}
-			success = true;
-			// 当有一个没有收到结果时，进行重发，根据fileState全部是否是true判断
-			for (var i = 0; i < fileState.length; i++) {
-				if (fileState[i] == "false") {
-					success = false;
-					repeat = true;
-				}
-			}
-			// 当标志位都为ture并且收到了返回结果
-			// 不进行重发
-			if (success == true || receiveMes == true) {
-				clearInterval(repeatId);
-			}
-			//重发
-			if (success == false || receiveMes == false) {
-				console.log('repeat');
-				// resend();
-			}else{
-				success = true;
-			}
+			
 		}
 		// 发送录制的音频
 		var sendRecord = function () {
@@ -427,17 +330,18 @@ var XueASR = (function (window, navigator) {
 			if (websocket.readyState == '1') {
 				// 当前有未发送的数据，先发送此数据
 				if (saveData.length != 0) {
-					for(var i = 0; i < saveData.length; i++) {
+					for(var i = 0, len = saveData.length; i < len; i++) {
 						websocket.send(saveData[i]);
 						console.log('发送未发送数据'+saveData[i]);
 					}
 					saveData=[];
 				}
 				// 发包
-				console.log('----------------', sendFile)
+				// console.log('----------------', sendFile)
 				websocket.send(sendFile);
 			} else {
 				// 当未连接时，暂存数据
+				console.log('sendFile', sendFile)
 				saveData.push(sendFile);
 				console.log('存储未发送数据');
 			}
@@ -461,13 +365,11 @@ var XueASR = (function (window, navigator) {
 			if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 				navigator.mediaDevices.getUserMedia(constraints).then(gotStream)['catch'](
 					function(e) {
-						// todo err
 						console.log(e);
 					}
 				);
 			} else if (navigator.getUserMedia) {
 				navigator.getUserMedia(constraints, gotStream, function(e) {
-					// todo err
 					console.log(e);
 				});
 			} else {
@@ -492,7 +394,6 @@ var XueASR = (function (window, navigator) {
 	        // 当有音频时触发回调函数
 	        volumeScriptNode.onaudioprocess = function (e) {
 	            if (!recording) return;
-	            // console.log('stream1');
 	            // 将当前音频发送给web worker 进行检测音量
 	            recorderWorker.sendData(e.inputBuffer.getChannelData(0));
 	        };
@@ -500,9 +401,6 @@ var XueASR = (function (window, navigator) {
 	        volumeSource.connect(volumeScriptNode);
 			volumeScriptNode.connect(audioCtx.destination);
 			
-
-			
-
 	        // 用于发送音频数据
 			recordSource = audioCtx.createMediaStreamSource(stream);
 	        recordScriptNode=audioCtx.createScriptProcessor(16384,1,1);
@@ -510,7 +408,6 @@ var XueASR = (function (window, navigator) {
 			// 当有录音数据时触发
 	        recordScriptNode.onaudioprocess = function (e) {
 	            if (!recording) return;
-	            // console.log('stream2'); 
 	            // 编码为MP3格式数据
 	            encodeMp3worker.encode(e.inputBuffer.getChannelData(0));
 	        };
@@ -525,10 +422,9 @@ var XueASR = (function (window, navigator) {
 		var analysisResult = function (result) {
 			console.log('analysisResult', result);
 			// 处理出错
-	    	if(result.code !== 0 && (result.data == null || result.data == 'undefined')){
-	    		// console.log(result.errorCode);
-	    		iseEvent.stop();
+	    	if(result.code !== 0 && !result.data){
 				checkStatus(result.code, result.msg);
+				iseEvent.stop();
 				return;		    		
 	    	}else{
 	    		// 判断当前返回结果与发出sid是否相同。
@@ -543,7 +439,6 @@ var XueASR = (function (window, navigator) {
 		    		}
 		    	}
 	    	}
-
 	    	// 当返回结果为正常值的时候，修改状态值
 	    	var index = Math.abs(result.data.common.idx);
     		// 表示已收到当前包的结果
@@ -551,55 +446,32 @@ var XueASR = (function (window, navigator) {
     			fileState[index]='true';
     		}
 			console.log('-result---', result.data)
-			if(asrParam.multi_sent_loop === '0'){
-				if(result.data.spec.evl_flag === "fnl") { // 结束
-					wrapArray.push(result.data)
-					if(wrapArray.length>0){
-						callback.onResult(wrapArray)
-					} else {
-						callback.onResult(`请按提示语朗读哦~~`)
-					}
-					
-				}
-			}else if(asrParam.multi_sent_loop === '1'){
+
+			if(asrParam.spec.multi_sent_loop === '0'){
+				utils.callOnResult(result, [result.data])
+			}else if(asrParam.spec.multi_sent_loop === '1'){
 				var showIndex = result.data.spec.new_sen_idx
 				if(showIndex >= 0){
 					wrapArray.push(result.data)
-					
+					utils.callOnResult(result, wrapArray)
 				}
-				if(result.data.spec.evl_flag === "fnl") { // 结束
-					if(wrapArray.length>0){
-						callback.onResult(wrapArray)
-					} else {
-						callback.onResult(`请按提示语朗读哦~~`)
-					}
-				}
+			} else {
+				utils.callOnResult(result, [result.data])
 			}
-			// callback.onResult(result)
+			if (lastBlob && Wclose) {
+				console.log('websocket--------', websocket)
+				websocketMethod.onclose()
+			}
 		}
-		// 检查返回结果状态码
+
 		// 当出错时，返回对应错误码
 		var checkStatus = function (status, msg) { 
-			// 错误码：
-			// 16014  socket接收失败
-			//16105	没有sid或者idx，或者在需要assess_ref的业务中没有传
-			//16106	音频数据为空
-			//16015	拉学生名单错误
-			// 16016	解码器返回超时，比如端长时间占用连接
-			//16017	Sid提前结束
-			//16018	解码器目前繁忙
-			//16107	音频格式错误
-			//16108	评测文本格式错误，如出现了违规字符
-			//16019	解码器返回数据无有效声音
-			//16020	pcm错误			
-			// 0：成功
 			if (status == 0) return;
-
-			if (status == '1302') error_302 = true;
-			// 停止录音
-			iseEvent.stop();
+			
 			// 错误回调
-			callback.onError(msg);		
+			callback.onError(msg);
+			// 停止录音
+			iseEvent.stop();		
 		}
 		return {
 			"start":start,
@@ -725,17 +597,16 @@ var XueASR = (function (window, navigator) {
 			}
 			return window.btoa( binary );
 		},
-    	// 合包参数
-    	"extendParam" : function (params_obj) {
-    		// console.log(params_obj)
-            asrParam.text = params_obj.ise_word.replace(/\n+/g,' ');
-            asrParam.webscoketURL = params_obj.webscoketURL || 'wss://asr.xueersi.com/wsh5'
-            asrParam.pid = params_obj.pid || '1103101';
-            asrParam.testid = params_obj.testid || "1";
-            asrParam.liveid = params_obj.liveid || "1";
-			asrParam.stuid = params_obj.stuid || 1;
-			asrParam.multi_sent_loop = params_obj.multi_sent_loop || 0;
-    	},
+		'callOnResult': function (result, wrapArray){
+			if(result.data.spec.evl_flag === "fnl") { // 结束
+				Wclose = true
+				if(wrapArray.length > 0){
+					return callback.onResult(wrapArray)
+				} else {
+					return callback.onResult(`请按提示语朗读哦~~`)
+				}
+			}
+		},
     	// 检测是否支持相关方法
     	"checkIsSupport": function () {
             if (!navigator.getUserMedia) {
@@ -754,15 +625,12 @@ var XueASR = (function (window, navigator) {
             if (!!window.ActiveXObject || "ActiveXObject" in window){
             	return false;
             }
-
             if (window.navigator.userAgent.indexOf("MSIE")>=0) {
             	return false;
             }
-
             if(window.navigator.userAgent.indexOf("compatible") > -1 && window.navigator.userAgent.indexOf("MSIE") > -1 && !window.navigator.userAgent.indexOf('Opera')){
             	return false;
             }
-
             return true;
         }
     }
@@ -773,13 +641,9 @@ var XueASR = (function (window, navigator) {
     	recorderWorker = newRecorderWorker(recordWorkerPath);
 		encodeMp3worker = newEncodeMp3worker(encodeWorkerPath);
   
-		// 当前浏览器是否支持录音方法	
-        this.isSupport = function () {
-			return utils.checkIsSupport()
-		}
-
 		// 如果当前浏览器不支持录音相关方法，返回
 		if (!utils.checkIsSupport()) {
+			console.log('请换成谷歌浏览器~~')
 			return;
 		}
 
@@ -790,10 +654,11 @@ var XueASR = (function (window, navigator) {
 
 		// 开始
         this.start = function (params_obj) {
+			Wclose = false 
         	// 回调状态
         	callback.onProcess('onStart')
         	// 合并变量
-        	utils.extendParam(params_obj)
+			asrParam = params_obj
             iseEvent.start();
         };
 
