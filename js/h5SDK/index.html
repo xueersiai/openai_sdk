@@ -10,6 +10,7 @@
 		<button id="Evaluationen" onclick="showcontent('Evaluationen')">  测评英文 </button>
 		<button id="Distinguishzh" onclick="showcontent('Distinguishzh')">  识别中文 </button>
 		<button id="Distinguishen" onclick="showcontent('Distinguishen')">  识别英文 </button>
+		<button id="Distinguishen" onclick="showcontent('Distinguishenchildren_en')">  儿童英文识别 </button>
 	</div>	
 	
 
@@ -145,6 +146,9 @@
 				case 'Distinguishen':
 					changeShape = '4'
 					break;
+				case 'Distinguishenchildren_en':
+					changeShape = '5'
+					break;
 					
 			}
 			$("#error").text('');
@@ -161,7 +165,7 @@
 				$('.showflag').show()
 				$('#textHtml').html('任何值得做的 | 就把它做好')
 				$('#audioOrigin').attr('src', './zh.mp3')
-			} else if (changeShape === '3' || changeShape === '4'){
+			} else if (changeShape === '3' || changeShape === '4' || changeShape === '5'){
 				$('.showflag').hide()
 			} 
 		}
@@ -194,7 +198,7 @@
 			
 					"need_out_wd_sec": "0",
 				}
-			} else if (changeShape === '3' || changeShape === '4'){
+			} else if (changeShape === '3' || changeShape === '4' || changeShape === '5'){
 				
 				params.spec = {
 					"vad_max_sec": "15",
@@ -221,6 +225,10 @@
 				case '4':
 					// 英文
 					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/asr/en?app_key=8102b22a5e81e840176d9f381ec6f837")
+					break;
+				case '5':
+					// 儿童英文识别
+					webscoketURL("ws://openapiai.xueersi.com/v1/api/speech/asr/children_en?app_key=8102b22a5e81e840176d9f381ec6f837")
 					break;
 			}
 			console.log('params', params)

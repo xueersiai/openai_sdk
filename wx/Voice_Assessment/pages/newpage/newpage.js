@@ -37,8 +37,8 @@ Page({
  * 生命周期函数--监听页面加载
  */
   onLoad: function (options) {
-    // type：String 1 英文 2 中文 3 中文识别 4 英文识别 
-    let ceping = '3'        
+    // type：String 1 英文 2 中文 3 中文识别 4 英文识别 5 儿童识别
+    let ceping = '5'        
     // 测评对照阅读的文本    英文例句  Whatever is worth doing is worth doing well.
     let cpinfo = 'Whatever is worth doing is worth doing well'  
     // 测评参考录音       英文例句地址    http://111.206.170.217:12001/ai/audios/Example-en.mp3
@@ -51,7 +51,7 @@ Page({
     let app_secret = 'f308ce31e42e366093c01e5283f1acc02c2cd47492f5c8633b55d58930be2b2c'
 
     //默认30s, 最大说话时长，最大可设置90s 
-    let vad_max_sec = (ceping === '3' || ceping === '4') ? '20' : '90';
+    let vad_max_sec = (ceping === '3' || ceping === '4' || ceping === '5') ? '20' : '90';
     // 默认5s, 说话后静音停止时间
     let vad_pause_sec = '3';
     //默认为10s, 说话前最大静音时长
@@ -90,7 +90,7 @@ Page({
         "multi_sent_loop": multi_sent_loop
 
       })
-    } else if (ceping === '3' || ceping === '4') {
+    } else if (ceping === '3' || ceping === '4' || ceping === '5') {
       initAiData = Object.assign(initAiData, {
         "long_speech": long_speech
       })

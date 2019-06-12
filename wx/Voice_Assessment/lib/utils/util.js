@@ -127,7 +127,7 @@ function getDataList(randomNum, assess_ref, idx, newbyteLength1, aidata, newCepi
       },
       "audio": newbyteLength1                             //音频字节流,需要转为二进制流
     })
-  } else if (newCeping === '3' || newCeping === '4') {
+  } else if (newCeping === '3' || newCeping === '4' || newCeping === '5') {
     sendstr = JSON.stringify({
       "common": {
         "sid": randomNum,  // sid，全局唯一

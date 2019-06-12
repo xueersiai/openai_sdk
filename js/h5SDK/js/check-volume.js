@@ -10,7 +10,7 @@ onmessage = function(a) {
         break;
     case "reset":
         reset();
-        break
+        break  
     }
 };
 function init(a) {

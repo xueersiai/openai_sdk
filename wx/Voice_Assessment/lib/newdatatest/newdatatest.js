@@ -115,6 +115,9 @@ function showtest(event, initData, accessModeData, showinitAidata) {
     case '4':
       testGoShiBie(accessModeData, '4');
       break;
+    case '5':
+      testGoShiBie(accessModeData, '5');
+      break;
   }
 }
 
@@ -180,6 +183,9 @@ function testGoShiBie(accessModeData, tag) {
     socketurl = 'ws://openapiai.xueersi.com/v1/api/speech/asr/zh' + geturl
   } else if (tag === '4') {
     socketurl = 'ws://openapiai.xueersi.com/v1/api/speech/asr/en' + geturl
+  }
+  else if (tag === '5') {  
+    socketurl = 'ws://openapiai.xueersi.com/v1/api/speech/asr/children_en' + geturl
   }
   console.log('socketurl-----', socketurl)
   // 链接当前socket 
@@ -561,7 +567,7 @@ function websocketCallBack(event) {
           }
         })
       }
-    } else if (newCeping === '3' || newCeping === '4') {
+    } else if (newCeping === '3' || newCeping === '4' || newCeping === '5') {
       if (newdata.spec.evl_flag === "fnl") {
         getApp().globalData.testResult.push(newdata)
         closeRecording()
