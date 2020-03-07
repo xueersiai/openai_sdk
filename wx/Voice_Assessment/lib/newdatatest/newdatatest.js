@@ -435,14 +435,14 @@ function clickRecording(event) {
     let newbyteLength = new Uint8Array(res.frameBuffer)
     let newbyteLength1 = []
     console.log('newbyteLength',newbyteLength)
-    if (systemtype == "devtools") {
-      newbyteLength1 = newbyteLength
-    } else if (systemtype == "ios") {
-      newbyteLength1 = newbyteLength
-    } else if (systemtype == "android") {
-      newbyteLength1 = newbyteLength.slice(4, newbyteLength.length - 3)
-    }
-    // newbyteLength1 = newbyteLength
+//     if (systemtype == "devtools") {
+//       newbyteLength1 = newbyteLength
+//     } else if (systemtype == "ios") {
+//       newbyteLength1 = newbyteLength
+//     } else if (systemtype == "android") {
+//       newbyteLength1 = newbyteLength.slice(4, newbyteLength.length - 3)
+//     }
+    newbyteLength1 = newbyteLength
     console.log('newbyteLength1',newbyteLength1)
     let newnewbyteLength1 = wx.arrayBufferToBase64(newbyteLength1)
     // 正常发包idx 数字累加 最后一包为负值
